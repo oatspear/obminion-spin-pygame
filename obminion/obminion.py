@@ -23,8 +23,8 @@ import pygame as pg
 from .view.widgets import BattleScene
 
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 640
+SCREEN_HEIGHT = 480
 
 
 class GameEntity(pg.sprite.Sprite):
@@ -210,16 +210,120 @@ class Battle(State):
     def __init__(self):
         State.__init__(self)
         self.next = "overworld"
-        gx_defs = {
+        bar_colour = (0, 204, 0)
+        frame_l = pg.image.load("images/portrait_frame_lr.png").convert_alpha()
+        frame_r = pg.image.load("images/portrait_frame_rl.png").convert_alpha()
+        dummy_pic = pg.image.load("images/dummy.png").convert()
+        dummy_pic_lg = pg.image.load("images/dummy_lg.png").convert()
+        type_icon = pg.image.load("images/type.png").convert_alpha()
+        gx_config = {
             "screen_width": SCREEN_WIDTH,
             "screen_height": SCREEN_HEIGHT,
-            "portrait_size": 64,
-            "portrait_frame_lr": pg.image.load("images/portrait_frame_lr.png").convert_alpha(),
-            "portrait_frame_rl": pg.image.load("images/portrait_frame_rl.png").convert_alpha(),
-            "portrait_frame_lg_lr": pg.image.load("images/portrait_frame_lg_lr.png").convert_alpha(),
-            "portrait_frame_lg_rl": pg.image.load("images/portrait_frame_lg_rl.png").convert_alpha()
+            "battle_scene": {
+                "team_left": {
+                    "active": {
+                        "name": "portrait-0-0",
+                        "x": 16 + 68,
+                        "y": SCREEN_HEIGHT - 16 - 72 - 8 - 136,
+                        "frame": pg.image.load("images/portrait_frame_lg_lr.png").convert_alpha(),
+                        "border": (4, 4, 4, 4),
+                        "picture": (40, 4, 128, 128),
+                        "icon": (4, 4, 32, 32),
+                        "bar": (28, 40, 8, 92),
+                        "bar_colour": bar_colour
+                    },
+                    "team": [{
+                        "name": "portrait-0-1",
+                        "x": 16,
+                        "y": SCREEN_HEIGHT - 16 - 72 - 8 - 72,
+                        "frame": frame_l,
+                        "border": (4, 4, 4, 4),
+                        "picture": (16, 4, 64, 64),
+                        "bar": (4, 4, 8, 64),
+                        "bar_colour": bar_colour
+                    }, {
+                        "name": "portrait-0-2",
+                        "x": 16,
+                        "y": SCREEN_HEIGHT - 16 - 72,
+                        "frame": frame_l,
+                        "border": (4, 4, 4, 4),
+                        "picture": (16, 4, 64, 64),
+                        "bar": (4, 4, 8, 64),
+                        "bar_colour": bar_colour
+                    }, {
+                        "name": "portrait-0-3",
+                        "x": 16 + 84 + 8,
+                        "y": SCREEN_HEIGHT - 16 - 72,
+                        "frame": frame_l,
+                        "border": (4, 4, 4, 4),
+                        "picture": (16, 4, 64, 64),
+                        "bar": (4, 4, 8, 64),
+                        "bar_colour": bar_colour
+                    }]
+                },
+                "team_right": {
+                    "active": {
+                        "name": "portrait-1-0",
+                        "x": SCREEN_WIDTH - 16 - 68 - 172,
+                        "y": 16 + 72 + 8,
+                        "frame": pg.image.load("images/portrait_frame_lg_rl.png").convert_alpha(),
+                        "border": (4, 4, 4, 4),
+                        "picture": (4, 4, 128, 128),
+                        "icon": (136, 100, 32, 32),
+                        "bar": (136, 4, 8, 92),
+                        "bar_colour": bar_colour
+                    },
+                    "team": [{
+                        "name": "portrait-1-1",
+                        "x": SCREEN_WIDTH - 16 - 84,
+                        "y": 16 + 72 + 8,
+                        "frame": frame_r,
+                        "border": (4, 4, 4, 4),
+                        "picture": (4, 4, 64, 64),
+                        "bar": (72, 4, 8, 64),
+                        "bar_colour": bar_colour
+                    }, {
+                        "name": "portrait-1-2",
+                        "x": SCREEN_WIDTH - 16 - 84,
+                        "y": 16,
+                        "frame": frame_r,
+                        "border": (4, 4, 4, 4),
+                        "picture": (4, 4, 64, 64),
+                        "bar": (72, 4, 8, 64),
+                        "bar_colour": bar_colour
+                    }, {
+                        "name": "portrait-1-3",
+                        "x": SCREEN_WIDTH - 16 - 84 - 8 - 84,
+                        "y": 16,
+                        "frame": frame_r,
+                        "border": (4, 4, 4, 4),
+                        "picture": (4, 4, 64, 64),
+                        "bar": (72, 4, 8, 64),
+                        "bar_colour": bar_colour
+                    }]
+                }
+            }
         }
-        self.scene = BattleScene(gx_defs)
+        self.scene = BattleScene(gx_config["battle_scene"])
+        self.scene.teams[0].portraits[0].bar_level = 0.25
+        self.scene.teams[0].portraits[1].bar_level = 0.75
+        self.scene.teams[0].portraits[2].bar_level = 0.5
+        self.scene.teams[0].portraits[3].bar_level = 1.0
+        self.scene.teams[1].portraits[0].bar_level = 0.2
+        self.scene.teams[1].portraits[1].bar_level = 0.8
+        self.scene.teams[1].portraits[2].bar_level = 0.4
+        self.scene.teams[1].portraits[3].bar_level = 0.6
+
+        self.scene.teams[0].portraits[0].set_icon(type_icon)
+        self.scene.teams[0].portraits[0].set_picture(dummy_pic_lg)
+        self.scene.teams[0].portraits[1].set_picture(dummy_pic)
+        self.scene.teams[0].portraits[2].set_picture(dummy_pic)
+        self.scene.teams[0].portraits[3].set_picture(dummy_pic)
+        self.scene.teams[1].portraits[0].set_icon(type_icon)
+        self.scene.teams[1].portraits[0].set_picture(dummy_pic_lg)
+        self.scene.teams[1].portraits[1].set_picture(dummy_pic)
+        self.scene.teams[1].portraits[2].set_picture(dummy_pic)
+        self.scene.teams[1].portraits[3].set_picture(dummy_pic)
 
     def startup(self):
         print "> Battle"
@@ -238,30 +342,8 @@ class Battle(State):
         pass
 
     def draw(self, screen):
-        bk = (0,0,0)
-        screen.fill((228,255,255))
+        screen.fill((0,0,0))
         self.scene.draw(screen)
-        # # pg.draw.circle(screen, bk, (168, 168), 128, 2)
-        # pg.draw.circle(screen, bk, (104, 58), 32, 2)
-        # pg.draw.circle(screen, bk, (44, 135), 32, 2)
-        # pg.draw.circle(screen, bk, (60, 232), 32, 2)
-        # pg.draw.circle(screen, bk, (168, 168), 64, 2)
-        # pg.draw.circle(screen, bk, (230, 185), 16, 2)
-        # pg.draw.circle(screen, bk, (185, 230), 16, 2)
-        # pg.draw.rect(screen, bk, (168, 64, 128, 24), 2)
-
-        # # pg.draw.circle(screen, bk, (632, 168), 128, 2)
-        # pg.draw.circle(screen, bk, (696, 58), 32, 2)
-        # pg.draw.circle(screen, bk, (756, 135), 32, 2)
-        # pg.draw.circle(screen, bk, (740, 232), 32, 2)
-        # pg.draw.circle(screen, bk, (632, 168), 64, 2)
-        # pg.draw.circle(screen, bk, (570, 185), 16, 2)
-        # pg.draw.circle(screen, bk, (615, 230), 16, 2)
-        # pg.draw.rect(screen, bk, (632 - 128, 64, 128, 24), 2)
-
-        pg.draw.rect(screen, bk, (400-64, 8, 128, 96), 2)
-        pg.draw.rect(screen, bk, (16, 600-16-192, 800-256-16-4, 192), 2)
-        pg.draw.rect(screen, bk, (800-256+4, 600-16-192, 256-4-16, 192), 2)
 
 
 class Control(object):
@@ -314,7 +396,7 @@ class Control(object):
 def main():
     settings = {
         "size": (SCREEN_WIDTH, SCREEN_HEIGHT),
-        "fps" : 60
+        "fps" : 30
     }
 
     app = Control(**settings)

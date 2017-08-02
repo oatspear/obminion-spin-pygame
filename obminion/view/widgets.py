@@ -26,21 +26,25 @@ import pygame as pg
 ###############################################################################
 
 class UIWidget(pg.sprite.Sprite):
-    def __init__(self, cx, cy, image, name = "widget"):
+    def __init__(self, x, y, image, name = "widget", border = (0, 0, 0, 0)):
         pg.sprite.Sprite.__init__(self)
         self.name   = name
-        self.x      = cx
-        self.y      = cy
+        self.x      = x
+        self.y      = y
         self.set_image(image)
         self.on_click = None
+        self.border_top     = border[0]
+        self.border_left    = border[1]
+        self.border_bottom  = border[2]
+        self.border_right   = border[3]
 
     def update(self, dt):
         pass
 
     def draw(self, screen):
-        self.rect.centerx = self.x
-        self.rect.centery = self.y
-        screen.blit(self.image, (self.rect.x, self.rect.y))
+        self.rect.x = self.x
+        self.rect.y = self.y
+        screen.blit(self.image, self.rect)
 
     def get_event(self, event):
         if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
@@ -51,12 +55,12 @@ class UIWidget(pg.sprite.Sprite):
         return False
 
     @property
-    def x1(self):
-        return self.rect.left
+    def cx(self):
+        return self.rect.centerx
 
     @property
-    def y1(self):
-        return self.rect.top
+    def cy(self):
+        return self.rect.centery
 
     @property
     def x2(self):
@@ -66,50 +70,130 @@ class UIWidget(pg.sprite.Sprite):
     def y2(self):
         return self.rect.bottom
 
+    @property
+    def w(self):
+        return self.rect.width
+
+    @property
+    def h(self):
+        return self.rect.height
+
     def set_image(self, image):
         self.image = image
         self.rect = self.image.get_rect()
-        self.rect.centerx = self.x
-        self.rect.centery = self.y
+        self.rect.x = self.x
+        self.rect.y = self.y
 
 
 ###############################################################################
-#   Battle UI Widgets
+#   Battle UI Unit Widgets
 ###############################################################################
 
 class UnitPortrait(UIWidget):
-    def __init__(self, cx, cy, frame, name = "portrait"):
-        UIWidget.__init__(self, cx, cy, frame, name)
-        self.portrait = None
-        self.rect_portrait = None
+    def __init__(self, x, y, name, frame, border, bar, bar_colour, picture):
+        UIWidget.__init__(self, x, y, frame, name = name, border = border)
+        self.bar_level = 0.0
+        self.bar_pos = bar
+        self.bar_colour = bar_colour
+        self.bar_rect = pg.Rect(x + bar[0], y + bar[1], bar[2], bar[3])
+        self.picture = None
+        self.picture_pos = picture
+        self.picture_rect = None
 
     def draw(self, screen):
-        self.rect.centerx = self.x
-        self.rect.centery = self.y
-        if self.portrait:
-            self.rect_portrait.centerx = self.x
-            self.rect_portrait.centery = self.y
-            screen.blit(self.portrait, (self.rect_portrait.x,
-                                        self.rect_portrait.y))
-        screen.blit(self.image, (self.rect.x, self.rect.y))
+        UIWidget.draw(self, screen)
+        if not self.picture is None:
+            self.picture_rect.x = self.x + self.picture_pos[0]
+            self.picture_rect.y = self.y + self.picture_pos[1]
+            screen.blit(self.picture, self.picture_rect)
+        if self.bar_level > 0.0:
+            self.bar_rect.x = self.x + self.bar_pos[0]
+            self.bar_rect.h = int(self.bar_level * self.bar_pos[3])
+            self.bar_rect.y = (self.y + self.bar_pos[1]
+                               + self.bar_pos[3] - self.bar_rect.h)
+            screen.fill(self.bar_colour, self.bar_rect)
 
-    def set_portrait(self, image):
-        self.portrait = image
+    def set_picture(self, image):
+        self.picture = image
         if not image is None:
-            self.rect_portrait = image.get_rect()
-            self.rect_portrait.centerx = self.x
-            self.rect_portrait.centery = self.y
+            self.picture_rect = image.get_rect()
+            self.picture_rect.x = self.x + self.picture_pos[0]
+            self.picture_rect.y = self.y + self.picture_pos[1]
         else:
-            self.rect_portrait = None
+            self.picture_rect = None
 
 
+class UnitPortraitL(UnitPortrait):
+    def __init__(self, x = 0, y = 0, name = "portrait-L", frame = None,
+                 border = (0, 0, 0, 0), bar = (0, 0, 8, 64),
+                 picture = (8, 0, 64, 64), bar_colour = (0, 128, 0)):
+        UnitPortrait.__init__(self, x, y, name, frame, border,
+                              bar, bar_colour, picture)
+
+
+class UnitPortraitR(UnitPortrait):
+    def __init__(self, x = 0, y = 0, name = "portrait-R", frame = None,
+                 border = (0, 0, 0, 0), bar = (64, 0, 8, 64),
+                 picture = (0, 0, 64, 64), bar_colour = (0, 128, 0)):
+        UnitPortrait.__init__(self, x, y, name, frame, border,
+                              bar, bar_colour, picture)
+
+
+class LargeUnitPortrait(UnitPortrait):
+    def __init__(self, x, y, name, frame, border,
+                 bar, bar_colour, picture, icon):
+        UnitPortrait.__init__(self, x, y, name, frame, border,
+                              bar, bar_colour, picture)
+        self.icon = None
+        self.icon_pos = icon
+        self.icon_rect = None
+
+    def draw(self, screen):
+        UnitPortrait.draw(self, screen)
+        if not self.icon is None:
+            self.icon_rect.x = self.x + self.icon_pos[0]
+            self.icon_rect.y = self.y + self.icon_pos[1]
+            screen.blit(self.icon, self.icon_rect)
+
+    def set_icon(self, image):
+        self.icon = image
+        if not image is None:
+            self.icon_rect = image.get_rect()
+            self.icon_rect.x = self.x + self.icon_pos[0]
+            self.icon_rect.y = self.y + self.icon_pos[1]
+        else:
+            self.icon_rect = None
+
+
+class LargeUnitPortraitL(LargeUnitPortrait):
+    def __init__(self, x = 0, y = 0, name = "portrait-lg-L", frame = None,
+                 border = (0, 0, 0, 0), bar = (24, 32, 8, 96),
+                 bar_colour = (0, 128, 0), picture = (32, 0, 128, 128),
+                 icon = (0, 0, 32, 32)):
+        LargeUnitPortrait.__init__(self, x, y, name, frame, border, bar,
+                                   bar_colour, picture, icon)
+
+
+class LargeUnitPortraitR(LargeUnitPortrait):
+    def __init__(self, x = 0, y = 0, name = "portrait-lg-R", frame = None,
+                 border = (0, 0, 0, 0), bar = (128, 0, 8, 96),
+                 bar_colour = (0, 128, 0), picture = (0, 0, 128, 128),
+                 icon = (128, 96, 32, 32)):
+        LargeUnitPortrait.__init__(self, x, y, name, frame, border, bar,
+                                   bar_colour, picture, icon)
+
+
+###############################################################################
+#   Battle UI Team Widgets
+###############################################################################
+
+# active is a dict to pass down to LargeUnitPortrait
+# team is a list of dict to pass down to UnitPortrait
 class BattleTeamWidget(object):
-    def __init__(self, x, y, gx_defs, ltr = True):
-        self.portraits = None
-        if ltr:
-            self._build_ltr_widgets(x, y, gx_defs)
-        else:
-            self._build_rtl_widgets(x, y, gx_defs)
+    def __init__(self, active, team, upc, lupc):
+        self.portraits = [lupc(**active)]
+        for config in team:
+            self.portraits.append(upc(**config))
 
     def draw(self, screen):
         for portrait in self.portraits:
@@ -122,36 +206,26 @@ class BattleTeamWidget(object):
         return False
 
 
-    def _build_ltr_widgets(self, x, y, gx_defs):
-        ps = gx_defs["portrait_size"]
-        ps_2 = ps // 2
-        frame = gx_defs["portrait_frame_lr"]
-        self.portraits = [
-            UnitPortrait(x + 104 + ps, y + 104 + ps,
-                         gx_defs["portrait_frame_lg_lr"], "portrait-l-0"),
-            UnitPortrait(x + 72 + ps_2, y + 26 + ps_2, frame, "portrait-l-1"),
-            UnitPortrait(x + 12 + ps_2, y + 103 + ps_2, frame, "portrait-l-2"),
-            UnitPortrait(x + 28 + ps_2, y + 200 + ps_2, frame, "portrait-l-3")
-        ]
+class BattleTeamWidgetL(BattleTeamWidget):
+    def __init__(self, active = None, team = None):
+        BattleTeamWidget.__init__(self, active, team,
+                                  UnitPortraitL, LargeUnitPortraitL)
 
-    def _build_rtl_widgets(self, x, y, gx_defs):
-        ps = gx_defs["portrait_size"]
-        ps_2 = ps // 2
-        frame = gx_defs["portrait_frame_rl"]
-        self.portraits = [
-            UnitPortrait(x - 104 - ps, y + 104 + ps,
-                         gx_defs["portrait_frame_lg_rl"], "portrait-r-0"),
-            UnitPortrait(x - 28 - ps_2, y + 200 + ps_2, frame, "portrait-r-1"),
-            UnitPortrait(x - 12 - ps_2, y + 103 + ps_2, frame, "portrait-r-2"),
-            UnitPortrait(x - 72 - ps_2, y + 26 + ps_2, frame, "portrait-r-3")
-        ]
+class BattleTeamWidgetR(BattleTeamWidget):
+    def __init__(self, active = None, team = None):
+        BattleTeamWidget.__init__(self, active, team,
+                                  UnitPortraitR, LargeUnitPortraitR)
 
+
+###############################################################################
+#   Battle UI Scene
+###############################################################################
 
 class BattleScene(object):
-    def __init__(self, gx_defs):
+    def __init__(self, gx_config):
         self.teams = [
-            BattleTeamWidget(0, 0, gx_defs, ltr = True),
-            BattleTeamWidget(gx_defs["screen_width"], 0, gx_defs, ltr = False)
+            BattleTeamWidgetL(**gx_config["team_left"]),
+            BattleTeamWidgetR(**gx_config["team_right"])
         ]
         for team in self.teams:
             for portrait in team.portraits:
