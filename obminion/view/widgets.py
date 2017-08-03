@@ -218,6 +218,96 @@ class BattleTeamWidgetR(BattleTeamWidget):
 
 
 ###############################################################################
+#   Battle UI Combat Log
+###############################################################################
+
+class CombatLogWidget(object):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def draw(self, screen):
+        pass
+
+
+###############################################################################
+#   Battle UI Action Widgets
+###############################################################################
+
+class ActionButton(UIWidget):
+    def __init__(self, x = 0, y = 0, name = "button", icon = None,
+                 border = (0, 0, 0, 0), description = ""):
+        UIWidget.__init__(self, x, y, icon, name = name, border = border)
+
+
+# it is easier for 'actions' to be a dict instead of a list of things
+class ActionPanel(UIWidget):
+    def __init__(self, x = 0, y = 0, name = "action_panel", frame = None,
+                 border = (0, 0, 0, 0), actions = None, label = (0, 0),
+                 font_size = 12, font_colour = (0, 0, 0), font_bg = None):
+        UIWidget.__init__(self, x, y, frame, name = name, border = border)
+        self.active     = False
+        self.font       = pg.font.SysFont("monospace", font_size)
+        self.font_colour = font_colour
+        self.font_bg    = font_bg
+        self.label      = None
+        self.label_pos  = label
+        self.label_rect = None
+        self.actions    = []
+        for name, config in actions.iteritems():
+            button = ActionButton(name = name, **config)
+            self.actions.append(button)
+            button.x += x
+            button.y += y
+
+    def draw(self, screen):
+        UIWidget.draw(self, screen)
+        if self.active:
+            for action in self.actions:
+                action.draw(screen)
+            if not self.label is None:
+                self.label_rect.x = self.x + self.label_pos[0]
+                self.label_rect.y = self.y + self.label_pos[1]
+                screen.blit(self.label, self.label_rect)
+
+    def get_event(self, event):
+        if self.active:
+            for action in self.actions:
+                if action.get_event(event):
+                    return True
+        return False
+
+    def set_text_label(self, text):
+        if text:
+            self.label = self.font.render(text, True, self.font_colour,
+                                          self.font_bg)
+            self.label_rect = self.label.get_rect()
+            self.label_rect.x = self.x + self.label_pos[0]
+            self.label_rect.y = self.y + self.label_pos[1]
+        else:
+            self.label = None
+            self.label_rect = None
+
+
+class BattleActionPanel(ActionPanel):
+    DEFAULT_ACTIONS = ("attack", "rotate_counter", "rotate_clock", "surrender")
+
+    def __init__(self, x = 0, y = 0, name = "action_panel", frame = None,
+                 border = (0, 0, 0, 0), actions = None, label = (0, 0),
+                 font_size = 12, font_colour = (0, 0, 0), font_bg = None):
+        ActionPanel.__init__(self, x = x, y = y, name = name, frame = frame,
+                             border = border, actions = (), label = label,
+                             font_size = font_size, font_colour = font_colour,
+                             font_bg = font_bg)
+        for name in self.DEFAULT_ACTIONS:
+            config = actions[name]
+            button = ActionButton(name = name, **config)
+            self.actions.append(button)
+            button.x += x
+            button.y += y
+
+
+###############################################################################
 #   Battle UI Scene
 ###############################################################################
 
@@ -230,15 +320,19 @@ class BattleScene(object):
         for team in self.teams:
             for portrait in team.portraits:
                 portrait.on_click = self.on_portrait_click
+        self.action_panel = ActionPanel(**gx_config["action_panel"])
 
     def draw(self, screen):
         for team in self.teams:
             team.draw(screen)
+        self.action_panel.draw(screen)
 
     def get_event(self, event):
         for team in self.teams:
             if team.get_event(event):
                 return True
+        if self.action_panel.get_event(event):
+            return True
         return False
 
     def on_portrait_click(self, portrait):

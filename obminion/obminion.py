@@ -301,6 +301,22 @@ class Battle(State):
                         "bar": (72, 4, 8, 64),
                         "bar_colour": bar_colour
                     }]
+                },
+                "action_panel": {
+                    "name": "action-panel",
+                    "x": SCREEN_WIDTH - 338,
+                    "y": SCREEN_HEIGHT - 144,
+                    "frame": pg.image.load("images/panel_frame.png").convert_alpha(),
+                    "border": (16, 16, 16, 16),
+                    "label": (32, 144 - 32),
+                    "font_size": 14,
+                    "font_colour": (255, 255, 255),
+                    "actions": {
+                        # "attack": {},
+                        # "rotate_counter": {},
+                        # "rotate_clock": {},
+                        # "surrender": {}
+                    }
                 }
             }
         }
@@ -324,6 +340,9 @@ class Battle(State):
         self.scene.teams[1].portraits[1].set_picture(dummy_pic)
         self.scene.teams[1].portraits[2].set_picture(dummy_pic)
         self.scene.teams[1].portraits[3].set_picture(dummy_pic)
+
+        self.scene.action_panel.active = True
+        self.scene.action_panel.set_text_label("Lorem ipsum dolor sit amet")
 
     def startup(self):
         print "> Battle"
@@ -399,6 +418,7 @@ def main():
         "fps" : 30
     }
 
+    pg.init()
     app = Control(**settings)
     state_dict = {
         "start":        StartScreen(),
