@@ -312,10 +312,34 @@ class Battle(State):
                     "font_size": 14,
                     "font_colour": (255, 255, 255),
                     "actions": {
-                        # "attack": {},
-                        # "rotate_counter": {},
-                        # "rotate_clock": {},
-                        # "surrender": {}
+                        "attack": {
+                            "x": 14 + 76,
+                            "y": 20,
+                            "icon": pg.image.load("images/button_attack.png").convert_alpha(),
+                            "border": (12, 12, 12, 12),
+                            "description": "Attack the opponent"
+                        },
+                        "rotate_counter": {
+                            "x": 14,
+                            "y": 20,
+                            "icon": pg.image.load("images/button_rotate_counter.png").convert_alpha(),
+                            "border": (12, 12, 12, 12),
+                            "description": "Rotate counter-clockwise (left)"
+                        },
+                        "rotate_clock": {
+                            "x": 14 + 76 + 76,
+                            "y": 20,
+                            "icon": pg.image.load("images/button_rotate_clock.png").convert_alpha(),
+                            "border": (12, 12, 12, 12),
+                            "description": "Rotate clockwise (right)"
+                        },
+                        "surrender": {
+                            "x": 14 + 76 + 76 + 76,
+                            "y": 20,
+                            "icon": pg.image.load("images/button_surrender.png").convert_alpha(),
+                            "border": (12, 12, 12, 12),
+                            "description": "Surrender to the opponent"
+                        }
                     }
                 }
             }
@@ -342,7 +366,6 @@ class Battle(State):
         self.scene.teams[1].portraits[3].set_picture(dummy_pic)
 
         self.scene.action_panel.active = True
-        self.scene.action_panel.set_text_label("Lorem ipsum dolor sit amet")
 
     def startup(self):
         print "> Battle"

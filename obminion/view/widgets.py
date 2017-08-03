@@ -238,6 +238,7 @@ class ActionButton(UIWidget):
     def __init__(self, x = 0, y = 0, name = "button", icon = None,
                  border = (0, 0, 0, 0), description = ""):
         UIWidget.__init__(self, x, y, icon, name = name, border = border)
+        self.description = description
 
 
 # it is easier for 'actions' to be a dict instead of a list of things
@@ -296,7 +297,7 @@ class BattleActionPanel(ActionPanel):
                  border = (0, 0, 0, 0), actions = None, label = (0, 0),
                  font_size = 12, font_colour = (0, 0, 0), font_bg = None):
         ActionPanel.__init__(self, x = x, y = y, name = name, frame = frame,
-                             border = border, actions = (), label = label,
+                             border = border, actions = {}, label = label,
                              font_size = font_size, font_colour = font_colour,
                              font_bg = font_bg)
         for name in self.DEFAULT_ACTIONS:
@@ -320,7 +321,9 @@ class BattleScene(object):
         for team in self.teams:
             for portrait in team.portraits:
                 portrait.on_click = self.on_portrait_click
-        self.action_panel = ActionPanel(**gx_config["action_panel"])
+        self.action_panel = BattleActionPanel(**gx_config["action_panel"])
+        for button in self.action_panel.actions:
+            button.on_click = self.on_action_button_click
 
     def draw(self, screen):
         for team in self.teams:
@@ -337,3 +340,7 @@ class BattleScene(object):
 
     def on_portrait_click(self, portrait):
         print ">> Portrait clicked", portrait.name
+
+    def on_action_button_click(self, button):
+        print ">> Button clicked", button.name
+        self.action_panel.set_text_label(button.description)
