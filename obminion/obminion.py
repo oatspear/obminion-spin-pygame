@@ -211,8 +211,8 @@ class Battle(State):
         State.__init__(self)
         self.next = "overworld"
         bar_colour = (0, 204, 0)
-        frame_l = pg.image.load("images/portrait_frame_lr.png").convert_alpha()
-        frame_r = pg.image.load("images/portrait_frame_rl.png").convert_alpha()
+        frame_l = pg.image.load("images/portrait_frame3_lr.png").convert_alpha()
+        frame_r = pg.image.load("images/portrait_frame3_rl.png").convert_alpha()
         dummy_pic = pg.image.load("images/dummy.png").convert()
         dummy_pic_lg = pg.image.load("images/dummy_lg.png").convert()
         type_icon = pg.image.load("images/type.png").convert_alpha()
@@ -223,83 +223,91 @@ class Battle(State):
                 "team_left": {
                     "active": {
                         "name": "portrait-0-0",
-                        "x": 16 + 68,
-                        "y": SCREEN_HEIGHT - 16 - 72 - 8 - 136,
-                        "frame": pg.image.load("images/portrait_frame_lg_lr.png").convert_alpha(),
-                        "border": (4, 4, 4, 4),
-                        "picture": (40, 4, 128, 128),
-                        "icon": (4, 4, 32, 32),
-                        "bar": (28, 40, 8, 92),
-                        "bar_colour": bar_colour
+                        "x": 16 + 82 - 16,
+                        "y": SCREEN_HEIGHT - 16 - 69 - 8 - 133,
+                        "frame": pg.image.load("images/portrait_frame_lg3_lr.png").convert_alpha(),
+                        "border": (3, 4, 4, 4),
+                        "picture": (39, 2, 128, 128),
+                        "icon": (3, 11, 32, 32),
+                        "bar": (27, 46, 8, 78),
+                        "bar_colour": bar_colour,
+                        "bar_bg": (24, 24, 24)
                     },
                     "team": [{
                         "name": "portrait-0-1",
                         "x": 16,
-                        "y": SCREEN_HEIGHT - 16 - 72 - 8 - 72,
+                        "y": SCREEN_HEIGHT - 16 - 69 - 8 - 69,
                         "frame": frame_l,
-                        "border": (4, 4, 4, 4),
-                        "picture": (16, 4, 64, 64),
-                        "bar": (4, 4, 8, 64),
-                        "bar_colour": bar_colour
+                        "border": (3, 3, 4, 4),
+                        "picture": (15, 2, 64, 64),
+                        "bar": (3, 8, 8, 52),
+                        "bar_colour": bar_colour,
+                        "bar_bg": (24, 24, 24)
                     }, {
                         "name": "portrait-0-2",
                         "x": 16,
-                        "y": SCREEN_HEIGHT - 16 - 72,
+                        "y": SCREEN_HEIGHT - 16 - 69,
                         "frame": frame_l,
-                        "border": (4, 4, 4, 4),
-                        "picture": (16, 4, 64, 64),
-                        "bar": (4, 4, 8, 64),
-                        "bar_colour": bar_colour
+                        "border": (3, 3, 4, 4),
+                        "picture": (15, 2, 64, 64),
+                        "bar": (3, 8, 8, 52),
+                        "bar_colour": bar_colour,
+                        "bar_bg": (24, 24, 24)
                     }, {
                         "name": "portrait-0-3",
-                        "x": 16 + 84 + 8,
-                        "y": SCREEN_HEIGHT - 16 - 72,
+                        "x": 16 + 82 + 8,
+                        "y": SCREEN_HEIGHT - 16 - 69,
                         "frame": frame_l,
-                        "border": (4, 4, 4, 4),
-                        "picture": (16, 4, 64, 64),
-                        "bar": (4, 4, 8, 64),
-                        "bar_colour": bar_colour
+                        "border": (3, 3, 4, 4),
+                        "picture": (15, 2, 64, 64),
+                        "bar": (3, 8, 8, 52),
+                        "bar_colour": bar_colour,
+                        "bar_bg": (24, 24, 24)
                     }]
                 },
                 "team_right": {
                     "active": {
                         "name": "portrait-1-0",
-                        "x": SCREEN_WIDTH - 16 - 68 - 172,
-                        "y": 16 + 72 + 8,
-                        "frame": pg.image.load("images/portrait_frame_lg_rl.png").convert_alpha(),
-                        "border": (4, 4, 4, 4),
-                        "picture": (4, 4, 128, 128),
-                        "icon": (136, 100, 32, 32),
-                        "bar": (136, 4, 8, 92),
-                        "bar_colour": bar_colour
+                        "x": SCREEN_WIDTH - 16 - 82 - (170 - 16),
+                        "y": 16 + 69 + 8,
+                        "frame": pg.image.load("images/portrait_frame_lg3_rl.png").convert_alpha(),
+                        "border": (3, 4, 4, 4),
+                        "picture": (3, 2, 128, 128),
+                        "icon": (135, 89, 32, 32),
+                        "bar": (135, 8, 8, 78),
+                        "bar_colour": bar_colour,
+                        "bar_bg": (24, 24, 24)
                     },
                     "team": [{
                         "name": "portrait-1-1",
-                        "x": SCREEN_WIDTH - 16 - 84,
-                        "y": 16 + 72 + 8,
+                        "x": SCREEN_WIDTH - 16 - 82,
+                        "y": 16 + 69 + 8,
                         "frame": frame_r,
-                        "border": (4, 4, 4, 4),
-                        "picture": (4, 4, 64, 64),
-                        "bar": (72, 4, 8, 64),
-                        "bar_colour": bar_colour
+                        "border": (3, 5, 4, 3),
+                        "picture": (3, 2, 64, 64),
+                        "bar": (71, 8, 8, 52),
+                        "bar_colour": bar_colour,
+                        "bar_bg": (24, 24, 24)
                     }, {
                         "name": "portrait-1-2",
-                        "x": SCREEN_WIDTH - 16 - 84,
+                        "x": SCREEN_WIDTH - 16 - 82,
                         "y": 16,
                         "frame": frame_r,
-                        "border": (4, 4, 4, 4),
-                        "picture": (4, 4, 64, 64),
-                        "bar": (72, 4, 8, 64),
-                        "bar_colour": bar_colour
+                        "border": (3, 5, 4, 3),
+                        "picture": (3, 2, 64, 64),
+                        "bar": (71, 8, 8, 52),
+                        "bar_colour": bar_colour,
+                        "bar_bg": (24, 24, 24)
                     }, {
                         "name": "portrait-1-3",
-                        "x": SCREEN_WIDTH - 16 - 84 - 8 - 84,
+                        "x": SCREEN_WIDTH - 16 - 82 - 8 - 82,
                         "y": 16,
                         "frame": frame_r,
-                        "border": (4, 4, 4, 4),
-                        "picture": (4, 4, 64, 64),
-                        "bar": (72, 4, 8, 64),
-                        "bar_colour": bar_colour
+                        "border": (3, 5, 4, 3),
+                        "picture": (3, 2, 64, 64),
+                        "bar": (71, 8, 8, 52),
+                        "bar_colour": bar_colour,
+                        "bar_bg": (24, 24, 24)
                     }]
                 },
                 "action_panel": {

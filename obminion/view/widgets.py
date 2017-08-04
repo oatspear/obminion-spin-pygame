@@ -90,28 +90,34 @@ class UIWidget(pg.sprite.Sprite):
 ###############################################################################
 
 class UnitPortrait(UIWidget):
-    def __init__(self, x, y, name, frame, border, bar, bar_colour, picture):
+    def __init__(self, x, y, name, frame, border, bar, bar_colour, bar_bg,
+                 picture):
         UIWidget.__init__(self, x, y, frame, name = name, border = border)
         self.bar_level = 0.0
         self.bar_pos = bar
         self.bar_colour = bar_colour
+        self.bar_bg = bar_bg
         self.bar_rect = pg.Rect(x + bar[0], y + bar[1], bar[2], bar[3])
         self.picture = None
         self.picture_pos = picture
         self.picture_rect = None
 
     def draw(self, screen):
-        UIWidget.draw(self, screen)
         if not self.picture is None:
             self.picture_rect.x = self.x + self.picture_pos[0]
             self.picture_rect.y = self.y + self.picture_pos[1]
             screen.blit(self.picture, self.picture_rect)
         if self.bar_level > 0.0:
             self.bar_rect.x = self.x + self.bar_pos[0]
+            if not self.bar_bg is None:
+                self.bar_rect.h = self.bar_pos[3]
+                self.bar_rect.y = self.y + self.bar_pos[1]
+                screen.fill(self.bar_bg, self.bar_rect)
             self.bar_rect.h = int(self.bar_level * self.bar_pos[3])
             self.bar_rect.y = (self.y + self.bar_pos[1]
                                + self.bar_pos[3] - self.bar_rect.h)
             screen.fill(self.bar_colour, self.bar_rect)
+        UIWidget.draw(self, screen)
 
     def set_picture(self, image):
         self.picture = image
@@ -126,24 +132,26 @@ class UnitPortrait(UIWidget):
 class UnitPortraitL(UnitPortrait):
     def __init__(self, x = 0, y = 0, name = "portrait-L", frame = None,
                  border = (0, 0, 0, 0), bar = (0, 0, 8, 64),
-                 picture = (8, 0, 64, 64), bar_colour = (0, 128, 0)):
+                 picture = (8, 0, 64, 64), bar_colour = (0, 128, 0),
+                 bar_bg = (0, 0, 0)):
         UnitPortrait.__init__(self, x, y, name, frame, border,
-                              bar, bar_colour, picture)
+                              bar, bar_colour, bar_bg, picture)
 
 
 class UnitPortraitR(UnitPortrait):
     def __init__(self, x = 0, y = 0, name = "portrait-R", frame = None,
                  border = (0, 0, 0, 0), bar = (64, 0, 8, 64),
-                 picture = (0, 0, 64, 64), bar_colour = (0, 128, 0)):
+                 picture = (0, 0, 64, 64), bar_colour = (0, 128, 0),
+                 bar_bg = (0, 0, 0)):
         UnitPortrait.__init__(self, x, y, name, frame, border,
-                              bar, bar_colour, picture)
+                              bar, bar_colour, bar_bg, picture)
 
 
 class LargeUnitPortrait(UnitPortrait):
     def __init__(self, x, y, name, frame, border,
-                 bar, bar_colour, picture, icon):
+                 bar, bar_colour, bar_bg, picture, icon):
         UnitPortrait.__init__(self, x, y, name, frame, border,
-                              bar, bar_colour, picture)
+                              bar, bar_colour, bar_bg, picture)
         self.icon = None
         self.icon_pos = icon
         self.icon_rect = None
@@ -168,19 +176,19 @@ class LargeUnitPortrait(UnitPortrait):
 class LargeUnitPortraitL(LargeUnitPortrait):
     def __init__(self, x = 0, y = 0, name = "portrait-lg-L", frame = None,
                  border = (0, 0, 0, 0), bar = (24, 32, 8, 96),
-                 bar_colour = (0, 128, 0), picture = (32, 0, 128, 128),
-                 icon = (0, 0, 32, 32)):
+                 bar_colour = (0, 128, 0), bar_bg = (0, 0, 0),
+                 picture = (32, 0, 128, 128), icon = (0, 0, 32, 32)):
         LargeUnitPortrait.__init__(self, x, y, name, frame, border, bar,
-                                   bar_colour, picture, icon)
+                                   bar_colour, bar_bg, picture, icon)
 
 
 class LargeUnitPortraitR(LargeUnitPortrait):
     def __init__(self, x = 0, y = 0, name = "portrait-lg-R", frame = None,
                  border = (0, 0, 0, 0), bar = (128, 0, 8, 96),
-                 bar_colour = (0, 128, 0), picture = (0, 0, 128, 128),
-                 icon = (128, 96, 32, 32)):
+                 bar_colour = (0, 128, 0), bar_bg = (0, 0, 0),
+                 picture = (0, 0, 128, 128), icon = (128, 96, 32, 32)):
         LargeUnitPortrait.__init__(self, x, y, name, frame, border, bar,
-                                   bar_colour, picture, icon)
+                                   bar_colour, bar_bg, picture, icon)
 
 
 ###############################################################################
