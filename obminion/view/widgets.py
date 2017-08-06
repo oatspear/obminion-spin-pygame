@@ -32,7 +32,8 @@ class UIWidget(pg.sprite.Sprite):
         self.x      = x
         self.y      = y
         self.set_image(image)
-        self.on_click = None
+        self.on_click       = None
+        self.on_right_click = None
         self.border_top     = border[0]
         self.border_left    = border[1]
         self.border_bottom  = border[2]
@@ -47,10 +48,13 @@ class UIWidget(pg.sprite.Sprite):
         screen.blit(self.image, self.rect)
 
     def get_event(self, event):
-        if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+        if event.type == pg.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(pg.mouse.get_pos()):
-                if not self.on_click is None:
+                if event.button == 1 and not self.on_click is None:
                     self.on_click(self)
+                    return True
+                if event.button == 3 and not self.on_right_click is None:
+                    self.on_right_click(self)
                     return True
         return False
 
@@ -354,6 +358,11 @@ class ActionPanel(UIWidget):
     def set_text_label(self, text):
         self.label.set_text(text)
 
+    def set_active(self, active):
+        self.active = active
+        for action in self.actions:
+            action.hovering = False
+
 
 class BattleActionPanel(ActionPanel):
     DEFAULT_ACTIONS = ("attack", "rotate_counter", "rotate_clock", "surrender")
@@ -367,12 +376,31 @@ class BattleActionPanel(ActionPanel):
                              font = font, font_name = font_name,
                              font_size = font_size, font_colour = font_colour,
                              font_bg = font_bg)
+        self._selected_action = None
         for name in self.DEFAULT_ACTIONS:
             config = actions[name]
             button = ActionButton(name = name, **config)
             self.actions.append(button)
             button.x += x
             button.y += y
+            button.on_click = self.on_action_button_click
+            button.on_right_click = self.on_action_button_right_click
+
+    def set_active(self, active):
+        ActionPanel.set_active(self, active)
+        self._selected_action = None
+
+    def get_selected_action(self):
+        action = self._selected_action
+        self._selected_action = None
+        return action
+
+    def on_action_button_click(self, button):
+        self._selected_action = button.name
+        self.label.set_text("")
+
+    def on_action_button_right_click(self, button):
+        self.label.set_text(button.description)
 
 
 ###############################################################################
@@ -381,6 +409,7 @@ class BattleActionPanel(ActionPanel):
 
 class BattleScene(object):
     def __init__(self, gx_config):
+        self.busy = False
         self.teams = [
             BattleTeamWidgetL(**gx_config["team_left"]),
             BattleTeamWidgetR(**gx_config["team_right"])
@@ -389,9 +418,20 @@ class BattleScene(object):
             for portrait in team.portraits:
                 portrait.on_click = self.on_portrait_click
         self.action_panel = BattleActionPanel(**gx_config["action_panel"])
-        for button in self.action_panel.actions:
-            button.on_click = self.on_action_button_click
         self.combat_log = CombatLogWidget(**gx_config["combat_log"])
+        self._timer = 0.0
+        self._animations = 0
+
+    def update(self, dt):
+        if self.busy:
+            if self._timer > 0.0:
+                self._timer -= dt
+                self.busy = self._timer >= 0.0
+        if not self.busy and self._animations > 0:
+            print self._animations, "animations to go"
+            self.busy = True
+            self._timer = 2.0
+            self._animations -= 1
 
     def draw(self, screen):
         for team in self.teams:
@@ -407,14 +447,44 @@ class BattleScene(object):
             return True
         return False
 
+    def reset(self):
+        self.busy = False
+        self.combat_log.clear()
+        self.action_panel.set_active(False)
+
+    def get_player_input(self):
+        self.busy = True
+        action = self.action_panel.get_selected_action()
+        if action:
+            self.busy = False
+            self.action_panel.set_active(False)
+        return action
+
+    def request_player_input(self):
+        self.busy = True
+        self._timer = -1.0
+        self.action_panel.set_active(True)
+        self.combat_log.log("Selecting round actions...")
+
     def on_portrait_click(self, portrait):
         print ">> Portrait clicked", portrait.name
         self.combat_log.log("Clicked on " + portrait.name)
 
-    def on_action_button_click(self, button):
-        print ">> Button clicked", button.name
-        self.action_panel.set_text_label(button.description)
-        if button.name == "surrender":
-            self.combat_log.clear()
+    def on_battle_start(self, engine):
+        self._animations += 1
+        self.combat_log.log("The battle has started!")
+
+    def on_battle_attack(self, engine):
+        self._animations += 1
+        self.combat_log.log("Entering the attack phase.")
+
+    def on_between_rounds(self, engine):
+        self._animations += 1
+        self.combat_log.log("Round {} has ended.".format(engine.mechanics.round))
+
+    def on_attack(self, engine, unit = None, target = None):
+        self._animations += 1
+        if unit.team.index == 0:
+            self.combat_log.log("You attacked the enemy.")
         else:
-            self.combat_log.log("Clicked on " + button.name)
+            self.combat_log.log("The enemy attacked you.")

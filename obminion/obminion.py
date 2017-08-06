@@ -20,11 +20,46 @@
 
 import pygame as pg
 
+from .engine.models import UnitTemplate, UnitInstance, UnitType, Ability, AbilityEffect
+from .engine.mechanics import BattleEngine
 from .view.widgets import BattleScene
 
 
 SCREEN_WIDTH = 640
 SCREEN_HEIGHT = 480
+
+###############################################################################
+# Temporary hard-coded data
+
+TYPES = {
+    "dummy": UnitType("Dummy Type"),
+    "normal": UnitType("Normal"),
+    "resistant": UnitType("Resistant", resistances = ("Dummy Type",)),
+    "weak": UnitType("Weak", weaknesses = ("Dummy Type",))
+}
+
+ABILITIES = {
+    "none": Ability("none", "Do Nothing"),
+    "log": Ability("log", "Log Ability",
+                   effects = (AbilityEffect("log", "self", ("self attack", "opponent defend")),))
+}
+
+SPECIES = {
+    "dummy": UnitTemplate("dummy", "Target Dummy", TYPES["dummy"],
+                          20, 10, 10, (ABILITIES["none"],), ""),
+    "normal": UnitTemplate("normal", "Normal Tester", TYPES["normal"],
+                          20, 10, 12, (), ""),
+    "resistant": UnitTemplate("resistant", "Resistant Tester", TYPES["resistant"],
+                          20, 10, 12, (), ""),
+    "weak": UnitTemplate("weak", "Weak Tester", TYPES["weak"],
+                          20, 10, 12, (), ""),
+    "logger": UnitTemplate("logger", "Logger", TYPES["normal"],
+                          10, 10, 12, (ABILITIES["log"],), "")
+}
+
+PLAYER = (UnitInstance(SPECIES["normal"]),)
+DUMMY = (UnitInstance(SPECIES["dummy"]),)
+###############################################################################
 
 
 class GameEntity(pg.sprite.Sprite):
@@ -210,6 +245,8 @@ class Battle(State):
     def __init__(self):
         State.__init__(self)
         self.next = "overworld"
+        self.engine = BattleEngine()
+
         bar_colour = (0, 204, 0)
         frame_l = pg.image.load("images/portrait_frame3_lr.png").convert_alpha()
         frame_r = pg.image.load("images/portrait_frame3_rl.png").convert_alpha()
@@ -387,10 +424,19 @@ class Battle(State):
         self.scene.teams[1].portraits[2].set_picture(dummy_pic)
         self.scene.teams[1].portraits[3].set_picture(dummy_pic)
 
-        self.scene.action_panel.active = True
+        self.engine.on.battle_start.sub(self.scene.on_battle_start)
+        self.engine.on.battle_attack.sub(self.scene.on_battle_attack)
+        self.engine.on.battle_between_rounds.sub(self.scene.on_between_rounds)
+        self.engine.on.attack.sub(self.scene.on_attack)
+
+        self.engine.on.battle_end.sub(self._on_battle_end)
+        self.engine.on.request_input.sub(self._on_input_request)
+        self._waiting_for_input = False
 
     def startup(self):
         print "> Battle"
+        self.scene.reset()
+        self.engine.set_battle((PLAYER, DUMMY))
 
     def get_event(self, event):
         if event.type == pg.KEYDOWN:
@@ -399,15 +445,28 @@ class Battle(State):
             elif event.key == pg.K_ESCAPE:
                 self.done = True
         elif event.type == pg.MOUSEBUTTONDOWN:
-            if not self.scene.get_event(event):
-                self.done = True
+            self.scene.get_event(event)
 
     def update(self, dt):
-        pass
+        self.scene.update(dt)
+        if self._waiting_for_input:
+            action = self.scene.get_player_input()
+            if action:
+                self.engine.set_action(action, 0)
+                self._waiting_for_input = False
+        if not self.scene.busy:
+            self.engine.step()
 
     def draw(self, screen):
         screen.fill((0,0,0))
         self.scene.draw(screen)
+
+    def _on_battle_end(self, engine):
+        self.done = True
+
+    def _on_input_request(self, engine):
+        self._waiting_for_input = True
+        self.scene.request_player_input()
 
 
 class Control(object):
