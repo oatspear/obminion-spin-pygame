@@ -85,6 +85,40 @@ class UIWidget(pg.sprite.Sprite):
         self.rect.y = self.y
 
 
+class TextLabel(object):
+    def __init__(self, x, y, text = "", font = None, font_name = "monospace",
+                 font_size = 12, font_colour = (0, 0, 0), font_bg = None):
+        self.x           = x
+        self.y           = y
+        self.label       = None
+        self.rect        = None
+        self.font_colour = font_colour
+        self.font_bg     = font_bg
+        if font is None:
+            self.font = pg.font.SysFont(font_name, font_size)
+        else:
+            self.font = font
+        self.set_text(text)
+
+    def draw(self, screen):
+        if not self.label is None:
+            self.rect.x = self.x
+            self.rect.y = self.y
+            screen.blit(self.label, self.rect)
+
+    def set_text(self, text):
+        self.text = text
+        if text:
+            self.label = self.font.render(text, True, self.font_colour,
+                                          self.font_bg)
+            self.rect = self.label.get_rect()
+            self.rect.x = self.x
+            self.rect.y = self.y
+        else:
+            self.label = None
+            self.rect = None
+
+
 ###############################################################################
 #   Battle UI Unit Widgets
 ###############################################################################
@@ -229,13 +263,43 @@ class BattleTeamWidgetR(BattleTeamWidget):
 #   Battle UI Combat Log
 ###############################################################################
 
-class CombatLogWidget(object):
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+class CombatLogWidget(UIWidget):
+    def __init__(self, x = 0, y = 0, name = "action_panel", frame = None,
+                 border = (0, 0, 0, 0), entries = 1, label = (0, 0),
+                 font = None, font_name = "monospace",
+                 font_size = 12, font_colour = (0, 0, 0), font_bg = None):
+        UIWidget.__init__(self, x, y, frame, name = name, border = border)
+        if font is None:
+            self.font = pg.font.SysFont(font_name, font_size)
+        else:
+            self.font = font
+        self.spacing = self.font.get_linesize()
+        self.label_pos = label
+        self.entries = []
+        for i in xrange(entries):
+            lx = x + label[0]
+            ly = y + label[1] + i * self.spacing
+            self.entries.append(TextLabel(lx, ly, font = self.font,
+                                          font_colour = font_colour,
+                                          font_bg = font_bg))
 
     def draw(self, screen):
-        pass
+        UIWidget.draw(self, screen)
+        i = 0
+        for entry in self.entries:
+            entry.x = self.x + self.label_pos[0]
+            entry.y = self.y + self.label_pos[1] + i * self.spacing
+            entry.draw(screen)
+            i += 1
+
+    def log(self, text):
+        entry = self.entries.pop(0)
+        self.entries.append(entry)
+        entry.set_text(text)
+
+    def clear(self):
+        for entry in self.entries:
+            entry.set_text("")
 
 
 ###############################################################################
@@ -253,15 +317,17 @@ class ActionButton(UIWidget):
 class ActionPanel(UIWidget):
     def __init__(self, x = 0, y = 0, name = "action_panel", frame = None,
                  border = (0, 0, 0, 0), actions = None, label = (0, 0),
+                 font = None, font_name = "monospace",
                  font_size = 12, font_colour = (0, 0, 0), font_bg = None):
         UIWidget.__init__(self, x, y, frame, name = name, border = border)
-        self.active     = False
-        self.font       = pg.font.SysFont("monospace", font_size)
-        self.font_colour = font_colour
-        self.font_bg    = font_bg
-        self.label      = None
-        self.label_pos  = label
-        self.label_rect = None
+        self.active = False
+        self.label_pos = label
+        if font is None:
+            self.font = pg.font.SysFont(font_name, font_size)
+        else:
+            self.font = font
+        self.label = TextLabel(x + label[0], y + label[1], font = self.font,
+                               font_colour = font_colour, font_bg = font_bg)
         self.actions    = []
         for name, config in actions.iteritems():
             button = ActionButton(name = name, **config)
@@ -274,10 +340,9 @@ class ActionPanel(UIWidget):
         if self.active:
             for action in self.actions:
                 action.draw(screen)
-            if not self.label is None:
-                self.label_rect.x = self.x + self.label_pos[0]
-                self.label_rect.y = self.y + self.label_pos[1]
-                screen.blit(self.label, self.label_rect)
+            self.label.x = self.x + self.label_pos[0]
+            self.label.y = self.y + self.label_pos[1]
+            self.label.draw(screen)
 
     def get_event(self, event):
         if self.active:
@@ -287,15 +352,7 @@ class ActionPanel(UIWidget):
         return False
 
     def set_text_label(self, text):
-        if text:
-            self.label = self.font.render(text, True, self.font_colour,
-                                          self.font_bg)
-            self.label_rect = self.label.get_rect()
-            self.label_rect.x = self.x + self.label_pos[0]
-            self.label_rect.y = self.y + self.label_pos[1]
-        else:
-            self.label = None
-            self.label_rect = None
+        self.label.set_text(text)
 
 
 class BattleActionPanel(ActionPanel):
@@ -303,9 +360,11 @@ class BattleActionPanel(ActionPanel):
 
     def __init__(self, x = 0, y = 0, name = "action_panel", frame = None,
                  border = (0, 0, 0, 0), actions = None, label = (0, 0),
+                 font = None, font_name = "monospace",
                  font_size = 12, font_colour = (0, 0, 0), font_bg = None):
         ActionPanel.__init__(self, x = x, y = y, name = name, frame = frame,
                              border = border, actions = {}, label = label,
+                             font = font, font_name = font_name,
                              font_size = font_size, font_colour = font_colour,
                              font_bg = font_bg)
         for name in self.DEFAULT_ACTIONS:
@@ -332,10 +391,12 @@ class BattleScene(object):
         self.action_panel = BattleActionPanel(**gx_config["action_panel"])
         for button in self.action_panel.actions:
             button.on_click = self.on_action_button_click
+        self.combat_log = CombatLogWidget(**gx_config["combat_log"])
 
     def draw(self, screen):
         for team in self.teams:
             team.draw(screen)
+        self.combat_log.draw(screen)
         self.action_panel.draw(screen)
 
     def get_event(self, event):
@@ -348,7 +409,12 @@ class BattleScene(object):
 
     def on_portrait_click(self, portrait):
         print ">> Portrait clicked", portrait.name
+        self.combat_log.log("Clicked on " + portrait.name)
 
     def on_action_button_click(self, button):
         print ">> Button clicked", button.name
         self.action_panel.set_text_label(button.description)
+        if button.name == "surrender":
+            self.combat_log.clear()
+        else:
+            self.combat_log.log("Clicked on " + button.name)

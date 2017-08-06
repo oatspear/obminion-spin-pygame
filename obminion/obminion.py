@@ -216,6 +216,9 @@ class Battle(State):
         dummy_pic = pg.image.load("images/dummy.png").convert()
         dummy_pic_lg = pg.image.load("images/dummy_lg.png").convert()
         type_icon = pg.image.load("images/type.png").convert_alpha()
+        panel_frame = pg.image.load("images/panel_frame.png").convert_alpha()
+        action_panel = pg.image.load("images/action_panel.png").convert_alpha()
+        common_font = pg.font.SysFont("monospace", 12)
         gx_config = {
             "screen_width": SCREEN_WIDTH,
             "screen_height": SCREEN_HEIGHT,
@@ -226,9 +229,9 @@ class Battle(State):
                         "x": 16 + 82 - 16,
                         "y": SCREEN_HEIGHT - 16 - 69 - 8 - 133,
                         "frame": pg.image.load("images/portrait_frame_lg3_lr.png").convert_alpha(),
-                        "border": (3, 4, 4, 4),
+                        "border": (5, 4, 4, 4),
                         "picture": (39, 2, 128, 128),
-                        "icon": (3, 11, 32, 32),
+                        "icon": (4, 11, 32, 32),
                         "bar": (27, 46, 8, 78),
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24)
@@ -273,7 +276,7 @@ class Battle(State):
                         "frame": pg.image.load("images/portrait_frame_lg3_rl.png").convert_alpha(),
                         "border": (3, 4, 4, 4),
                         "picture": (3, 2, 128, 128),
-                        "icon": (135, 89, 32, 32),
+                        "icon": (135, 87, 32, 32),
                         "bar": (135, 8, 8, 78),
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24)
@@ -312,43 +315,54 @@ class Battle(State):
                 },
                 "action_panel": {
                     "name": "action-panel",
-                    "x": SCREEN_WIDTH - 338,
-                    "y": SCREEN_HEIGHT - 144,
-                    "frame": pg.image.load("images/panel_frame.png").convert_alpha(),
-                    "border": (16, 16, 16, 16),
-                    "label": (32, 144 - 32),
-                    "font_size": 14,
+                    "x": SCREEN_WIDTH - 428,
+                    "y": SCREEN_HEIGHT - 104,
+                    "frame": action_panel,
+                    "border": (8, 112, 16, 0),
+                    "label": (118, 90),
+                    "font": common_font,
                     "font_colour": (255, 255, 255),
                     "actions": {
                         "attack": {
-                            "x": 14 + 76,
-                            "y": 20,
+                            "x": 206,
+                            "y": 15,
                             "icon": pg.image.load("images/button_attack.png").convert_alpha(),
-                            "border": (12, 12, 12, 12),
+                            "border": (6, 9, 9, 9),
                             "description": "Attack the opponent"
                         },
                         "rotate_counter": {
-                            "x": 14,
-                            "y": 20,
+                            "x": 132,
+                            "y": 15,
                             "icon": pg.image.load("images/button_rotate_counter.png").convert_alpha(),
-                            "border": (12, 12, 12, 12),
-                            "description": "Rotate counter-clockwise (left)"
+                            "border": (6, 9, 9, 9),
+                            "description": "Rotate counter-clockwise"
                         },
                         "rotate_clock": {
-                            "x": 14 + 76 + 76,
-                            "y": 20,
+                            "x": 280,
+                            "y": 15,
                             "icon": pg.image.load("images/button_rotate_clock.png").convert_alpha(),
-                            "border": (12, 12, 12, 12),
-                            "description": "Rotate clockwise (right)"
+                            "border": (6, 9, 9, 9),
+                            "description": "Rotate clockwise"
                         },
                         "surrender": {
-                            "x": 14 + 76 + 76 + 76,
-                            "y": 20,
+                            "x": 354,
+                            "y": 15,
                             "icon": pg.image.load("images/button_surrender.png").convert_alpha(),
-                            "border": (12, 12, 12, 12),
+                            "border": (6, 9, 9, 9),
                             "description": "Surrender to the opponent"
                         }
                     }
+                },
+                "combat_log": {
+                    "name": "combat_log",
+                    "x": 0,
+                    "y": 0,
+                    "frame": panel_frame,
+                    "border": (16, 16, 16, 16),
+                    "label": (24, 16),
+                    "entries": 7,
+                    "font": common_font,
+                    "font_colour": (255, 255, 255)
                 }
             }
         }
