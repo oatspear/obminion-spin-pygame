@@ -121,7 +121,7 @@ class BattleUnit(object):
         self.speed.minus(amount)
 
     def damage(self, amount, type = None):
-        amount = self.type(type.name if type else None)(amount)
+        amount = self.type(type.id if type else None)(amount)
         self.health = max(0, self.health - amount)
         self.on.damage(self, amount = amount, type = type)
         if self.health == 0:
@@ -263,7 +263,8 @@ class Attribute(object):
 ###############################################################################
 
 class UnitType(object):
-    def __init__(self, name, resistances = None, weaknesses = None):
+    def __init__(self, id, name, resistances = None, weaknesses = None):
+        self.id = id
         self.name = name
         self.resistances = resistances or []
         self.weaknesses = weaknesses or []

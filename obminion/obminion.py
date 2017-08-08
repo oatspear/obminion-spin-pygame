@@ -22,7 +22,7 @@ import pygame as pg
 
 from .engine.models import UnitTemplate, UnitInstance, UnitType, Ability, AbilityEffect
 from .engine.mechanics import BattleEngine
-from .view.widgets import BattleScene
+from .view.battle import BattleScene
 
 
 SCREEN_WIDTH = 640
@@ -32,10 +32,10 @@ SCREEN_HEIGHT = 480
 # Temporary hard-coded data
 
 TYPES = {
-    "dummy": UnitType("Dummy Type"),
-    "normal": UnitType("Normal"),
-    "resistant": UnitType("Resistant", resistances = ("Dummy Type",)),
-    "weak": UnitType("Weak", weaknesses = ("Dummy Type",))
+    "dummy": UnitType("dummy", "Dummy Type"),
+    "normal": UnitType("normal", "Normal"),
+    "resistant": UnitType("resistant", "Resistant", resistances = ("dummy",)),
+    "weak": UnitType("weak", "Weak", weaknesses = ("dummy",))
 }
 
 ABILITIES = {
@@ -45,19 +45,19 @@ ABILITIES = {
 }
 
 SPECIES = {
-    "dummy": UnitTemplate("dummy", "Target Dummy", TYPES["dummy"],
+    "dummy": UnitTemplate("0000", "Target Dummy", TYPES["dummy"],
                           20, 10, 10, (ABILITIES["none"],), ""),
-    "normal": UnitTemplate("normal", "Normal Tester", TYPES["normal"],
+    "normal": UnitTemplate("0001", "Normal Tester", TYPES["normal"],
                           20, 10, 12, (), ""),
-    "resistant": UnitTemplate("resistant", "Resistant Tester", TYPES["resistant"],
+    "resistant": UnitTemplate("0002", "Resistant Tester", TYPES["resistant"],
                           20, 10, 12, (), ""),
-    "weak": UnitTemplate("weak", "Weak Tester", TYPES["weak"],
+    "weak": UnitTemplate("0003", "Weak Tester", TYPES["weak"],
                           20, 10, 12, (), ""),
-    "logger": UnitTemplate("logger", "Logger", TYPES["normal"],
+    "logger": UnitTemplate("0004", "Logger", TYPES["normal"],
                           10, 10, 12, (ABILITIES["log"],), "")
 }
 
-PLAYER = (UnitInstance(SPECIES["normal"]),)
+PLAYER = (UnitInstance(SPECIES["normal"]), UnitInstance(SPECIES["normal"]))
 DUMMY = (UnitInstance(SPECIES["dummy"]),)
 ###############################################################################
 
@@ -256,6 +256,22 @@ class Battle(State):
         panel_frame = pg.image.load("images/panel_frame.png").convert_alpha()
         action_panel = pg.image.load("images/action_panel.png").convert_alpha()
         common_font = pg.font.SysFont("monospace", 12)
+        sprite_bank = {
+            "0000": dummy_pic,
+            "0000-main": dummy_pic_lg,
+            "0001": dummy_pic,
+            "0001-main": dummy_pic_lg,
+            "0002": dummy_pic,
+            "0002-main": dummy_pic_lg,
+            "0003": dummy_pic,
+            "0003-main": dummy_pic_lg,
+            "0004": dummy_pic,
+            "0004-main": dummy_pic_lg,
+            "dummy": type_icon,
+            "normal": type_icon,
+            "resistant": type_icon,
+            "weak": type_icon
+        }
         gx_config = {
             "screen_width": SCREEN_WIDTH,
             "screen_height": SCREEN_HEIGHT,
@@ -303,7 +319,14 @@ class Battle(State):
                         "bar": (3, 8, 8, 52),
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24)
-                    }]
+                    }],
+                    "ordering": [
+                        (),
+                        (0,),
+                        (0, 2),
+                        (0, 1, 3),
+                        (0, 1, 2, 3)
+                    ]
                 },
                 "team_right": {
                     "active": {
@@ -348,7 +371,14 @@ class Battle(State):
                         "bar": (71, 8, 8, 52),
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24)
-                    }]
+                    }],
+                    "ordering": [
+                        (),
+                        (0,),
+                        (0, 2),
+                        (0, 1, 3),
+                        (0, 1, 2, 3)
+                    ]
                 },
                 "action_panel": {
                     "name": "action-panel",
@@ -403,26 +433,7 @@ class Battle(State):
                 }
             }
         }
-        self.scene = BattleScene(gx_config["battle_scene"])
-        self.scene.teams[0].portraits[0].bar_level = 0.25
-        self.scene.teams[0].portraits[1].bar_level = 0.75
-        self.scene.teams[0].portraits[2].bar_level = 0.5
-        self.scene.teams[0].portraits[3].bar_level = 1.0
-        self.scene.teams[1].portraits[0].bar_level = 0.2
-        self.scene.teams[1].portraits[1].bar_level = 0.8
-        self.scene.teams[1].portraits[2].bar_level = 0.4
-        self.scene.teams[1].portraits[3].bar_level = 0.6
-
-        self.scene.teams[0].portraits[0].set_icon(type_icon)
-        self.scene.teams[0].portraits[0].set_picture(dummy_pic_lg)
-        self.scene.teams[0].portraits[1].set_picture(dummy_pic)
-        self.scene.teams[0].portraits[2].set_picture(dummy_pic)
-        self.scene.teams[0].portraits[3].set_picture(dummy_pic)
-        self.scene.teams[1].portraits[0].set_icon(type_icon)
-        self.scene.teams[1].portraits[0].set_picture(dummy_pic_lg)
-        self.scene.teams[1].portraits[1].set_picture(dummy_pic)
-        self.scene.teams[1].portraits[2].set_picture(dummy_pic)
-        self.scene.teams[1].portraits[3].set_picture(dummy_pic)
+        self.scene = BattleScene(gx_config["battle_scene"], sprite_bank)
 
         self.engine.on.battle_start.sub(self.scene.on_battle_start)
         self.engine.on.battle_attack.sub(self.scene.on_battle_attack)
@@ -437,6 +448,7 @@ class Battle(State):
         print "> Battle"
         self.scene.reset()
         self.engine.set_battle((PLAYER, DUMMY))
+        self.scene.set_battle(self.engine)
 
     def get_event(self, event):
         if event.type == pg.KEYDOWN:

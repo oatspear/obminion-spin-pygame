@@ -38,14 +38,16 @@ class UIWidget(pg.sprite.Sprite):
         self.border_left    = border[1]
         self.border_bottom  = border[2]
         self.border_right   = border[3]
+        self.visible        = True
 
     def update(self, dt):
         pass
 
     def draw(self, screen):
-        self.rect.x = self.x
-        self.rect.y = self.y
-        screen.blit(self.image, self.rect)
+        if self.visible:
+            self.rect.x = self.x
+            self.rect.y = self.y
+            screen.blit(self.image, self.rect)
 
     def get_event(self, event):
         if event.type == pg.MOUSEBUTTONDOWN:
@@ -141,16 +143,18 @@ class UnitPortrait(UIWidget):
         self.picture_rect = None
 
     def draw(self, screen):
+        if not self.visible:
+            return False
         if not self.picture is None:
             self.picture_rect.x = self.x + self.picture_pos[0]
             self.picture_rect.y = self.y + self.picture_pos[1]
             screen.blit(self.picture, self.picture_rect)
+        self.bar_rect.x = self.x + self.bar_pos[0]
+        if not self.bar_bg is None:
+            self.bar_rect.h = self.bar_pos[3]
+            self.bar_rect.y = self.y + self.bar_pos[1]
+            screen.fill(self.bar_bg, self.bar_rect)
         if self.bar_level > 0.0:
-            self.bar_rect.x = self.x + self.bar_pos[0]
-            if not self.bar_bg is None:
-                self.bar_rect.h = self.bar_pos[3]
-                self.bar_rect.y = self.y + self.bar_pos[1]
-                screen.fill(self.bar_bg, self.bar_rect)
             self.bar_rect.h = int(self.bar_level * self.bar_pos[3])
             self.bar_rect.y = (self.y + self.bar_pos[1]
                                + self.bar_pos[3] - self.bar_rect.h)
@@ -195,6 +199,8 @@ class LargeUnitPortrait(UnitPortrait):
         self.icon_rect = None
 
     def draw(self, screen):
+        if not self.visible:
+            return False
         UnitPortrait.draw(self, screen)
         if not self.icon is None:
             self.icon_rect.x = self.x + self.icon_pos[0]
@@ -236,10 +242,14 @@ class LargeUnitPortraitR(LargeUnitPortrait):
 # active is a dict to pass down to LargeUnitPortrait
 # team is a list of dict to pass down to UnitPortrait
 class BattleTeamWidget(object):
-    def __init__(self, active, team, upc, lupc):
+    def __init__(self, active, team, ordering, upc, lupc):
         self.portraits = [lupc(**active)]
         for config in team:
             self.portraits.append(upc(**config))
+        if ordering:
+            self.ordering = ordering
+        else:
+            self.ordering = [range(i) for i in xrange(len(self.portraits))]
 
     def draw(self, screen):
         for portrait in self.portraits:
@@ -251,15 +261,19 @@ class BattleTeamWidget(object):
                 return True
         return False
 
+    def get_portrait_for(self, i, n):
+        assert i >= -n and i < n and n <= len(self.portraits)
+        return self.portraits[self.ordering[n][i]]
+
 
 class BattleTeamWidgetL(BattleTeamWidget):
-    def __init__(self, active = None, team = None):
-        BattleTeamWidget.__init__(self, active, team,
+    def __init__(self, active = None, team = None, ordering = None):
+        BattleTeamWidget.__init__(self, active, team, ordering,
                                   UnitPortraitL, LargeUnitPortraitL)
 
 class BattleTeamWidgetR(BattleTeamWidget):
-    def __init__(self, active = None, team = None):
-        BattleTeamWidget.__init__(self, active, team,
+    def __init__(self, active = None, team = None, ordering = None):
+        BattleTeamWidget.__init__(self, active, team, ordering,
                                   UnitPortraitR, LargeUnitPortraitR)
 
 
@@ -401,90 +415,3 @@ class BattleActionPanel(ActionPanel):
 
     def on_action_button_right_click(self, button):
         self.label.set_text(button.description)
-
-
-###############################################################################
-#   Battle UI Scene
-###############################################################################
-
-class BattleScene(object):
-    def __init__(self, gx_config):
-        self.busy = False
-        self.teams = [
-            BattleTeamWidgetL(**gx_config["team_left"]),
-            BattleTeamWidgetR(**gx_config["team_right"])
-        ]
-        for team in self.teams:
-            for portrait in team.portraits:
-                portrait.on_click = self.on_portrait_click
-        self.action_panel = BattleActionPanel(**gx_config["action_panel"])
-        self.combat_log = CombatLogWidget(**gx_config["combat_log"])
-        self._timer = 0.0
-        self._animations = 0
-
-    def update(self, dt):
-        if self.busy:
-            if self._timer > 0.0:
-                self._timer -= dt
-                self.busy = self._timer >= 0.0
-        if not self.busy and self._animations > 0:
-            print self._animations, "animations to go"
-            self.busy = True
-            self._timer = 2.0
-            self._animations -= 1
-
-    def draw(self, screen):
-        for team in self.teams:
-            team.draw(screen)
-        self.combat_log.draw(screen)
-        self.action_panel.draw(screen)
-
-    def get_event(self, event):
-        for team in self.teams:
-            if team.get_event(event):
-                return True
-        if self.action_panel.get_event(event):
-            return True
-        return False
-
-    def reset(self):
-        self.busy = False
-        self.combat_log.clear()
-        self.action_panel.set_active(False)
-
-    def get_player_input(self):
-        self.busy = True
-        action = self.action_panel.get_selected_action()
-        if action:
-            self.busy = False
-            self.action_panel.set_active(False)
-        return action
-
-    def request_player_input(self):
-        self.busy = True
-        self._timer = -1.0
-        self.action_panel.set_active(True)
-        self.combat_log.log("Selecting round actions...")
-
-    def on_portrait_click(self, portrait):
-        print ">> Portrait clicked", portrait.name
-        self.combat_log.log("Clicked on " + portrait.name)
-
-    def on_battle_start(self, engine):
-        self._animations += 1
-        self.combat_log.log("The battle has started!")
-
-    def on_battle_attack(self, engine):
-        self._animations += 1
-        self.combat_log.log("Entering the attack phase.")
-
-    def on_between_rounds(self, engine):
-        self._animations += 1
-        self.combat_log.log("Round {} has ended.".format(engine.mechanics.round))
-
-    def on_attack(self, engine, unit = None, target = None):
-        self._animations += 1
-        if unit.team.index == 0:
-            self.combat_log.log("You attacked the enemy.")
-        else:
-            self.combat_log.log("The enemy attacked you.")

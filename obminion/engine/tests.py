@@ -20,10 +20,10 @@ print "> OK"
 print "Creating data..."
 
 types = {
-    "dummy": UnitType("Dummy Type"),
-    "normal": UnitType("Normal"),
-    "resistant": UnitType("Resistant", resistances = ("Dummy Type",)),
-    "weak": UnitType("Weak", weaknesses = ("Dummy Type",))
+    "dummy": UnitType("dummy", "Dummy Type"),
+    "normal": UnitType("normal", "Normal"),
+    "resistant": UnitType("resistant", "Resistant", resistances = ("dummy",)),
+    "weak": UnitType("weak", "Weak", weaknesses = ("dummy",))
 }
 
 abilities = {
