@@ -23,6 +23,7 @@ import pygame as pg
 from .engine.models import UnitTemplate, UnitInstance, UnitType, Ability, AbilityEffect
 from .engine.mechanics import BattleEngine
 from .view.battle import BattleScene
+from .view.sprites import Spritesheet, ImageSequence, MultiPoseSprite
 
 
 SCREEN_WIDTH = 640
@@ -247,6 +248,13 @@ class Battle(State):
         self.next = "overworld"
         self.engine = BattleEngine()
 
+        animation_bank = MultiPoseSprite()
+        battle_animations = Spritesheet("images/rotation_sheet.png")
+        animation_bank.add_sprite("rotation_clock", ImageSequence(battle_animations,
+                                  (0, 0, 128, 128), 4, 0.1))
+        animation_bank.add_sprite("rotation_counter", ImageSequence(battle_animations,
+                                  (0, 128, 128, 128), 4, 0.1))
+
         bar_colour = (0, 204, 0)
         frame_l = pg.image.load("images/portrait_frame3_lr.png").convert_alpha()
         frame_r = pg.image.load("images/portrait_frame3_rl.png").convert_alpha()
@@ -433,7 +441,8 @@ class Battle(State):
                 }
             }
         }
-        self.scene = BattleScene(gx_config["battle_scene"], sprite_bank)
+        self.scene = BattleScene(gx_config["battle_scene"], sprite_bank,
+                                 animation_bank)
 
         self.engine.on.battle_start.sub(self.scene.on_battle_start)
         self.engine.on.battle_attack.sub(self.scene.on_battle_attack)

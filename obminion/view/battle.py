@@ -21,7 +21,7 @@
 from .widgets import BattleTeamWidgetL, BattleTeamWidgetR, \
                      BattleActionPanel, CombatLogWidget
 from .animation import AnimationQueue, Animation, BarLevelAnimation, \
-                       WriteAnimation, GetActionAnimation
+                       WriteAnimation, GetActionAnimation, AnimatedSprite
 
 
 ###############################################################################
@@ -29,8 +29,9 @@ from .animation import AnimationQueue, Animation, BarLevelAnimation, \
 ###############################################################################
 
 class BattleScene(object):
-    def __init__(self, gx_config, sprite_bank):
+    def __init__(self, gx_config, sprite_bank, animation_bank):
         self.sprite_bank = sprite_bank
+        self.animation_bank = animation_bank
         self.teams = [
             BattleTeamWidgetL(**gx_config["team_left"]),
             BattleTeamWidgetR(**gx_config["team_right"])
@@ -137,18 +138,28 @@ class BattleScene(object):
             self._log("Your team rotated counter-clockwise.")
         else:
             self._log("The enemy team rotated counter-clockwise.")
-        wait = Animation(1.0, 0)
-        wait.on_end = lambda a: self._update_team_portraits(team.index, team)
-        self._animations.push(wait)
+        self.animation_bank.set_sprite("rotation_counter")
+        portrait = self.teams[team.index].get_portrait_for(0, team.size)
+        cx = portrait.picture_rect.centerx
+        cy = portrait.picture_rect.centery
+        animation = AnimatedSprite(self.animation_bank.image_sequence,
+                                   cx, cy, repeats = 3)
+        animation.on_end = lambda a: self._update_team_portraits(team.index, team)
+        self._animations.push(animation)
 
     def on_team_rotate_right(self, team, active = None, previous = None):
         if team.index == 0:
             self._log("Your team rotated clockwise.")
         else:
             self._log("The enemy team rotated clockwise.")
-        wait = Animation(1.0, 0)
-        wait.on_end = lambda a: self._update_team_portraits(team.index, team)
-        self._animations.push(wait)
+        self.animation_bank.set_sprite("rotation_clock")
+        portrait = self.teams[team.index].get_portrait_for(0, team.size)
+        cx = portrait.picture_rect.centerx
+        cy = portrait.picture_rect.centery
+        animation = AnimatedSprite(self.animation_bank.image_sequence,
+                                   cx, cy, repeats = 3)
+        animation.on_end = lambda a: self._update_team_portraits(team.index, team)
+        self._animations.push(animation)
 
 
     def _update_team_portraits(self, team_index, battle_team):

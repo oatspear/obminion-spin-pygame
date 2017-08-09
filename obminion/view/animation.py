@@ -132,6 +132,41 @@ class GetActionAnimation(object):
         self.element.set_active(False)
 
 
+class AnimatedSprite(Animation):
+    def __init__(self, image_sequence, cx, cy,
+                 duration = 0.0, delay = 0.0, loop = False, repeats = 0):
+        Animation.__init__(self, duration, delay, loop = loop)
+        image_sequence.reset()
+        self.image_sequence = image_sequence
+        self.cx = cx
+        self.cy = cy
+        self.rect = image_sequence.sprite.get_rect()
+        self.rect.centerx = cx
+        self.rect.centery = cy
+        if duration == 0.0 and not loop:
+            self.duration += (repeats + 1) * image_sequence.duration
+
+    def update(self, dt):
+        self.elapsed += dt
+        if self.delay > 0.0:
+            self.delay -= dt
+            if self.delay < 0.0:
+                dt = -self.delay
+            else:
+                return
+        self.image_sequence.update(dt)
+        if self.image_sequence.changed:
+            self.rect = self.image_sequence.sprite.get_rect()
+            self.rect.centerx = self.cx
+            self.rect.centery = self.cy
+
+    def draw(self, screen):
+        if self.delay > 0.0:
+            return
+        screen.blit(self.image_sequence.sprite, self.rect)
+        
+
+
 ###############################################################################
 # Animation Queue
 ###############################################################################
