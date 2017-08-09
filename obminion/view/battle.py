@@ -20,6 +20,8 @@
 
 from .widgets import BattleTeamWidgetL, BattleTeamWidgetR, \
                      BattleActionPanel, CombatLogWidget
+from .animation import AnimationQueue, Animation, BarLevelAnimation, \
+                       WriteAnimation, GetActionAnimation
 
 
 ###############################################################################
@@ -28,7 +30,6 @@ from .widgets import BattleTeamWidgetL, BattleTeamWidgetR, \
 
 class BattleScene(object):
     def __init__(self, gx_config, sprite_bank):
-        self.busy = False
         self.sprite_bank = sprite_bank
         self.teams = [
             BattleTeamWidgetL(**gx_config["team_left"]),
@@ -37,26 +38,24 @@ class BattleScene(object):
         for team in self.teams:
             for portrait in team.portraits:
                 portrait.on_click = self.on_portrait_click
+        self.selected_action = None
         self.action_panel = BattleActionPanel(**gx_config["action_panel"])
         self.combat_log = CombatLogWidget(**gx_config["combat_log"])
-        self._timer = 0.0
-        self._animations = 0
+        self._animations = AnimationQueue()
+
+    @property
+    def busy(self):
+        return self._animations.busy
 
     def update(self, dt):
-        if self.busy:
-            if self._timer > 0.0:
-                self._timer -= dt
-                self.busy = self._timer >= 0.0
-        if not self.busy and self._animations > 0:
-            self.busy = True
-            self._timer = 2.0
-            self._animations -= 1
+        self._animations.update(dt)
 
     def draw(self, screen):
         for team in self.teams:
             team.draw(screen)
         self.combat_log.draw(screen)
         self.action_panel.draw(screen)
+        self._animations.draw(screen)
 
     def get_event(self, event):
         for team in self.teams:
@@ -67,9 +66,9 @@ class BattleScene(object):
         return False
 
     def reset(self):
-        self.busy = False
         self.combat_log.clear()
         self.action_panel.set_active(False)
+        self._animations.cancel_all()
 
     def set_battle(self, engine):
         team_index = 0
@@ -78,77 +77,78 @@ class BattleScene(object):
             team_index += 1
         engine.mechanics.team_events.rotate_left.sub(self.on_team_rotate_left)
         engine.mechanics.team_events.rotate_right.sub(self.on_team_rotate_right)
+        engine.mechanics.unit_events.attack.sub(self.on_attack)
         engine.mechanics.unit_events.damage.sub(self.on_damage)
         engine.mechanics.unit_events.heal.sub(self.on_heal)
 
     def get_player_input(self):
-        self.busy = True
-        action = self.action_panel.get_selected_action()
+        action = self.selected_action
         if action:
-            self.busy = False
-            self.action_panel.set_active(False)
+            self.selected_action = None
         return action
 
     def request_player_input(self):
-        self.busy = True
-        self._timer = -1.0
-        self.action_panel.set_active(True)
-        self.combat_log.log("Selecting round actions...")
+        self.selected_action = None
+        self._log("Selecting round actions...")
+        animation = GetActionAnimation(self.action_panel)
+        animation.on_end = self._on_player_action
+        self._animations.push(animation)
 
     def on_portrait_click(self, portrait):
         print ">> Portrait clicked", portrait.name
         self.combat_log.log("Clicked on " + portrait.name)
 
     def on_battle_start(self, engine):
-        self._animations += 1
-        self.combat_log.log("The battle has started!")
+        self._log("The battle has started!")
 
     def on_battle_attack(self, engine):
-        self._animations += 1
-        self.combat_log.log("Entering the attack phase.")
+        self._log("Entering the attack phase.")
 
     def on_between_rounds(self, engine):
-        self._animations += 1
-        self.combat_log.log("Round {} has ended.".format(engine.mechanics.round))
+        self._log("Round {} has ended.".format(engine.mechanics.round))
 
-    def on_attack(self, engine, unit = None, target = None):
-        self._animations += 1
+    def on_attack(self, unit, target = None):
         if unit.team.index == 0:
-            self.combat_log.log("You attacked the enemy.")
+            self._log("You attacked the enemy.")
         else:
-            self.combat_log.log("The enemy attacked you.")
+            self._log("The enemy attacked you.")
 
     def on_damage(self, unit, amount = 0, type = None):
         team = self.teams[unit.team.index]
         portrait = team.get_portrait_for(unit.index, unit.team.size)
-        portrait.bar_level = unit.health / float(unit.max_health.value)
         if type is None:
             text = "{} took {} damage.".format(unit.template.name, amount)
         else:
             text = "{} took {} {} damage.".format(unit.template.name, amount,
                                                   type.name)
-        self.combat_log.log(text)
+        self._log(text)
+        level = unit.health / float(unit.max_health.value)
+        self._animations.push(BarLevelAnimation(portrait, level, -0.5))
 
     def on_heal(self, unit, amount = 0):
         team = self.teams[unit.team.index]
         portrait = team.get_portrait_for(unit.index, unit.team.size)
-        portrait.bar_level = unit.health / float(unit.max_health.value)
-        self.combat_log.log("{} restored {} health.".format(unit.template.name,
-                                                            amount))
+        self._log("{} restored {} health.".format(unit.template.name, amount))
+        level = unit.health / float(unit.max_health.value)
+        self._animations.push(BarLevelAnimation(portrait, level, 0.5))
 
     def on_team_rotate_left(self, team, active = None, previous = None):
-        self._update_team_portraits(team.index, team)
         if team.index == 0:
-            self.combat_log.log("Your team rotated counter-clockwise.")
+            self._log("Your team rotated counter-clockwise.")
         else:
-            self.combat_log.log("The enemy team rotated counter-clockwise.")
+            self._log("The enemy team rotated counter-clockwise.")
+        wait = Animation(1.0, 0)
+        wait.on_end = lambda a: self._update_team_portraits(team.index, team)
+        self._animations.push(wait)
 
     def on_team_rotate_right(self, team, active = None, previous = None):
-        self._update_team_portraits(team.index, team)
         if team.index == 0:
-            self.combat_log.log("Your team rotated clockwise.")
+            self._log("Your team rotated clockwise.")
         else:
-            self.combat_log.log("The enemy team rotated clockwise.")
+            self._log("The enemy team rotated clockwise.")
+        wait = Animation(1.0, 0)
+        wait.on_end = lambda a: self._update_team_portraits(team.index, team)
+        self._animations.push(wait)
 
 
     def _update_team_portraits(self, team_index, battle_team):
@@ -169,3 +169,16 @@ class BattleScene(object):
         portrait.set_picture(self.sprite_bank.get(unit.template.id + "-main"))
         portrait.set_icon(self.sprite_bank.get(unit.template.type.id))
         portrait.bar_level = unit.health / float(unit.max_health.value)
+
+    def _log(self, text):
+        animation = WriteAnimation(None, text, 20, delay = 0.5)
+        animation.on_start = self._on_log_start
+        self._animations.push(animation)
+
+    def _on_log_start(self, animation):
+        self.combat_log.log("")
+        animation.element = self.combat_log.entries[-1]
+
+    def _on_player_action(self, animation):
+        self.action_panel.set_active(False)
+        self.selected_action = animation.action

@@ -31,7 +31,7 @@ class BattleMechanics(object):
     def __init__(self):
         self.teams = []
         self.turn = 0
-        self.round = 0
+        self.round = 1
         self.abilities = []
         self.events = MechanicsEventChannel()
         self.unit_events = UnitEventChannel()

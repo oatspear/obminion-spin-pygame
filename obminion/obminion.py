@@ -438,7 +438,6 @@ class Battle(State):
         self.engine.on.battle_start.sub(self.scene.on_battle_start)
         self.engine.on.battle_attack.sub(self.scene.on_battle_attack)
         self.engine.on.battle_between_rounds.sub(self.scene.on_between_rounds)
-        self.engine.on.attack.sub(self.scene.on_attack)
 
         self.engine.on.battle_end.sub(self._on_battle_end)
         self.engine.on.request_input.sub(self._on_input_request)
