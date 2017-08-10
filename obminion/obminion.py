@@ -42,24 +42,42 @@ TYPES = {
 ABILITIES = {
     "none": Ability("none", "Do Nothing"),
     "log": Ability("log", "Log Ability",
-                   effects = (AbilityEffect("log", "self", ("self attack", "opponent defend")),))
+                   effects = (AbilityEffect("log", "self", ("self attack", "opponent defend")),)),
+    "recoil": Ability("recoil", "Recoil", effects = (
+                      AbilityEffect("damage", "self", ("self attack",),
+                                    parameters = {"amount": 3}),)),
+    "lifesteal": Ability("lifesteal", "Lifesteal", effects = (
+                         AbilityEffect("heal", "self", ("self post_attack",),
+                                       parameters = {"relative": 0.5, "reference": "damage"}),)),
+    "cleave": Ability("cleave", "Cleave", effects = (
+                         AbilityEffect("damage", "opponent_adjacent", ("self post_attack",),
+                                       parameters = {"relative": 0.2, "reference": "damage"}),)),
+    "death_aoe": Ability("death_aoe", "Disease Cloud", effects = (
+                         AbilityEffect("damage", "all", ("self death",),
+                                       parameters = {"amount": 2}),))
 }
 
 SPECIES = {
-    "dummy": UnitTemplate("0000", "Target Dummy", TYPES["dummy"],
-                          20, 10, 10, (ABILITIES["none"],), ""),
-    "normal": UnitTemplate("0001", "Normal Tester", TYPES["normal"],
-                          20, 10, 12, (), ""),
-    "resistant": UnitTemplate("0002", "Resistant Tester", TYPES["resistant"],
-                          20, 10, 12, (), ""),
-    "weak": UnitTemplate("0003", "Weak Tester", TYPES["weak"],
-                          20, 10, 12, (), ""),
-    "logger": UnitTemplate("0004", "Logger", TYPES["normal"],
-                          10, 10, 12, (ABILITIES["log"],), "")
+    "dummy": UnitTemplate("0000", "Target Dummy", TYPES["dummy"], 20, 10, 10, (ABILITIES["none"],)),
+    "normal": UnitTemplate("0001", "Normal Tester", TYPES["normal"], 20, 10, 12, ()),
+    "resistant": UnitTemplate("0002", "Resistant Tester", TYPES["resistant"], 20, 10, 12, ()),
+    "weak": UnitTemplate("0003", "Weak Tester", TYPES["weak"], 20, 10, 12, ()),
+    "logger": UnitTemplate("0004", "Logger", TYPES["normal"], 10, 10, 12,
+                           (ABILITIES["log"],)),
+    "double-edge": UnitTemplate("0005", "Double-Edge", TYPES["normal"], 16, 18, 12,
+                                (ABILITIES["recoil"],)),
+    "lifesteal": UnitTemplate("0006", "Vampire", TYPES["normal"], 16, 10, 8,
+                                (ABILITIES["lifesteal"],)),
+    "cleave": UnitTemplate("0007", "Brutal Warrior", TYPES["normal"], 20, 10, 8,
+                                (ABILITIES["cleave"],)),
+    "abomination": UnitTemplate("0008", "Abomination", TYPES["normal"], 16, 12, 8,
+                                (ABILITIES["death_aoe"],))
 }
 
-PLAYER = (UnitInstance(SPECIES["normal"]), UnitInstance(SPECIES["normal"]))
-DUMMY = (UnitInstance(SPECIES["dummy"]),)
+PLAYER = (UnitInstance(SPECIES["lifesteal"]), UnitInstance(SPECIES["double-edge"]),
+          UnitInstance(SPECIES["cleave"]), UnitInstance(SPECIES["abomination"]))
+DUMMY = (UnitInstance(SPECIES["dummy"]), UnitInstance(SPECIES["dummy"]),
+         UnitInstance(SPECIES["dummy"]), UnitInstance(SPECIES["dummy"]))
 ###############################################################################
 
 
@@ -266,15 +284,23 @@ class Battle(State):
         common_font = pg.font.SysFont("monospace", 12)
         sprite_bank = {
             "0000": dummy_pic,
-            "0000-main": dummy_pic_lg,
+            "0000_main": dummy_pic_lg,
             "0001": dummy_pic,
-            "0001-main": dummy_pic_lg,
+            "0001_main": dummy_pic_lg,
             "0002": dummy_pic,
-            "0002-main": dummy_pic_lg,
+            "0002_main": dummy_pic_lg,
             "0003": dummy_pic,
-            "0003-main": dummy_pic_lg,
+            "0003_main": dummy_pic_lg,
             "0004": dummy_pic,
-            "0004-main": dummy_pic_lg,
+            "0004_main": dummy_pic_lg,
+            "0005": pg.image.load("images/pyro.png").convert(),
+            "0005_main": pg.image.load("images/pyro_lg.png").convert(),
+            "0006": pg.image.load("images/vampire.png").convert(),
+            "0006_main": pg.image.load("images/vampire_lg.png").convert(),
+            "0007": pg.image.load("images/pitlord.png").convert(),
+            "0007_main": pg.image.load("images/pitlord_lg.png").convert(),
+            "0008": pg.image.load("images/abomination.png").convert(),
+            "0008_main": pg.image.load("images/abomination_lg.png").convert(),
             "dummy": type_icon,
             "normal": type_icon,
             "resistant": type_icon,
@@ -299,8 +325,8 @@ class Battle(State):
                     },
                     "team": [{
                         "name": "portrait-0-1",
-                        "x": 16,
-                        "y": SCREEN_HEIGHT - 16 - 69 - 8 - 69,
+                        "x": 16 + 82 + 8,
+                        "y": SCREEN_HEIGHT - 16 - 69,
                         "frame": frame_l,
                         "border": (3, 3, 4, 4),
                         "picture": (15, 2, 64, 64),
@@ -319,8 +345,8 @@ class Battle(State):
                         "bar_bg": (24, 24, 24)
                     }, {
                         "name": "portrait-0-3",
-                        "x": 16 + 82 + 8,
-                        "y": SCREEN_HEIGHT - 16 - 69,
+                        "x": 16,
+                        "y": SCREEN_HEIGHT - 16 - 69 - 8 - 69,
                         "frame": frame_l,
                         "border": (3, 3, 4, 4),
                         "picture": (15, 2, 64, 64),
@@ -351,8 +377,8 @@ class Battle(State):
                     },
                     "team": [{
                         "name": "portrait-1-1",
-                        "x": SCREEN_WIDTH - 16 - 82,
-                        "y": 16 + 69 + 8,
+                        "x": SCREEN_WIDTH - 16 - 82 - 8 - 82,
+                        "y": 16,
                         "frame": frame_r,
                         "border": (3, 5, 4, 3),
                         "picture": (3, 2, 64, 64),
@@ -371,8 +397,8 @@ class Battle(State):
                         "bar_bg": (24, 24, 24)
                     }, {
                         "name": "portrait-1-3",
-                        "x": SCREEN_WIDTH - 16 - 82 - 8 - 82,
-                        "y": 16,
+                        "x": SCREEN_WIDTH - 16 - 82,
+                        "y": 16 + 69 + 8,
                         "frame": frame_r,
                         "border": (3, 5, 4, 3),
                         "picture": (3, 2, 64, 64),

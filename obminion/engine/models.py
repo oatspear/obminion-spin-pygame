@@ -25,8 +25,7 @@
 class UnitTemplate(object):
     id_gen = 1
 
-    def __init__(self, id, name, type, health, power, speed, abilities,
-                 portrait):
+    def __init__(self, id, name, type, health, power, speed, abilities):
         self.id         = id
         self.name       = name
         self.type       = type
@@ -34,7 +33,6 @@ class UnitTemplate(object):
         self.power      = power
         self.speed      = speed
         self.abilities  = abilities
-        self.portrait   = portrait
 
     @classmethod
     def defaults(cls):
@@ -94,44 +92,56 @@ class BattleUnit(object):
         self.team       = None
         self.index      = -1
         self.on         = events
+        self.dead       = False
 
     @property
     def alive(self):
-        return self.health > 0
+        return not self.dead and self.health > 0
 
     def plus_health(self, amount):
-        self.max_health.plus(amount)
-        if self.health > 0:
-            self.health = min(self.health + amount, self.max_health.value)
+        if not self.dead:
+            self.max_health.plus(amount)
+            if self.health > 0:
+                self.health = min(self.health + amount, self.max_health.value)
 
     def minus_health(self, amount):
-        self.max_health.minus(amount)
-        self.health = min(self.max_health.value, self.health)
+        if not self.dead:
+            self.max_health.minus(amount)
+            self.health = min(self.max_health.value, self.health)
 
     def plus_power(self, amount):
-        self.power.plus(amount)
+        if not self.dead:
+            self.power.plus(amount)
 
     def minus_power(self, amount):
-        self.power.minus(amount)
+        if not self.dead:
+            self.power.minus(amount)
 
     def plus_speed(self, amount):
-        self.speed.plus(amount)
+        if not self.dead:
+            self.speed.plus(amount)
 
     def minus_speed(self, amount):
-        self.speed.minus(amount)
+        if not self.dead:
+            self.speed.minus(amount)
 
-    def damage(self, amount, type = None):
+    def damage(self, amount, type = None, source = None):
+        if self.dead:
+            return 0
         amount = self.type(type.id if type else None)(amount)
         self.health = max(0, self.health - amount)
-        self.on.damage(self, amount = amount, type = type)
-        if self.health == 0:
-            self.on.death(self)
+        self.on.damage(self, amount = amount, type = type, source = source)
+        # if self.health == 0:
+            # self.on.death(self)
+        return amount
 
-    def heal(self, amount):
-        self.health = min(self.max_health.value, self.health + amount)
-        self.on.heal(self, amount = amount)
+    def heal(self, amount, source = None):
+        if not self.dead:
+            self.health = min(self.max_health.value, self.health + amount)
+            self.on.heal(self, amount = amount, source = source)
 
     def kill(self):
+        self.dead = True
         self.health = 0
         self.on.death(self)
 
@@ -207,21 +217,25 @@ class BattleTeam(object):
         return False
 
     def kill(self, i):
-        u = self.units.pop(i)
-        self.grave.append(u)
+        unit = self.units[i]
+        unit.kill()
+        self.units.pop(i)
         for j in xrange(i, len(self.units)):
             self.units[j].index = j
-        u.kill()
+        self.on.remove(self, unit = unit)
+        self.grave.append(unit)
 
     def cleanup(self):
         i = 0
         while i < len(self.units):
-            if not self.units[i].alive:
-                unit = self.units.pop(i)
-                self.grave.append(unit)
+            unit = self.units[i]
+            if not unit.alive:
+                unit.kill()
+                self.units.pop(i)
                 self.on.remove(self, unit = unit)
+                self.grave.append(unit)
             else:
-                self.units[i].index = i
+                unit.index = i
                 i += 1
 
 

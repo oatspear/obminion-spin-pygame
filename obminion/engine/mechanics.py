@@ -91,7 +91,10 @@ class BattleMechanics(object):
         target  = self.defender
         self.unit_events.attack(unit, target = target)
         self.unit_events.defend(target, target = unit)
-        target.damage(damage, type)
+        damage = target.damage(damage, type)
+        if damage > 0:
+            self.unit_events.post_attack(unit, target = target, damage = damage)
+        # self.events.attack(self, unit = unit, target = target, damage = damage)
 
     def cleanup(self):
         for team in self.teams:
@@ -178,6 +181,9 @@ class BattleMechanics(object):
     def _target_opponent_right(self, unit):
         return FixTarget(self._opposing(unit), unit, (1,))
 
+    def _target_opponent_adjacent(self, unit):
+        return FixTarget(self._opposing(unit), unit, (1, -1))
+
     def _target_opponent_front(self, unit):
         return FixTarget(self._opposing(unit), unit, (0, 1, -1))
 
@@ -221,14 +227,17 @@ class EffectHandler(object):
             source = event[0]
             event = event[1]
             if source == "mechanics":
-                cb = EffectCallback(self.mechanics.events, event,
+                cb = EffectCallback(self.template.ability, self.unit,
+                                    self.mechanics.events, event,
                                     (self.mechanics,), self.mechanic)
             elif "team" in source:
-                cb = EffectCallback(self.mechanics.team_events, event,
+                cb = EffectCallback(self.template.ability, self.unit,
+                                    self.mechanics.team_events, event,
                                     self.mechanics.target(self.unit, source),
                                     self.mechanic)
             else:
-                cb = EffectCallback(self.mechanics.unit_events, event,
+                cb = EffectCallback(self.template.ability, self.unit,
+                                    self.mechanics.unit_events, event,
                                     self.mechanics.target(self.unit, source),
                                     self.mechanic)
             self.callbacks.append(cb)
@@ -240,10 +249,37 @@ class EffectHandler(object):
 
     def _mechanic_log(self, emitter, **args):
         print self.template.ability.name, "triggered with", args
+        return True
+
+    def _mechanic_damage(self, emitter, **args):
+        param = self.template.parameters
+        type = param.get("type")
+        if "amount" in param:
+            amount = param["amount"]
+        else:
+            assert "relative" in param and "reference" in param
+            amount = int(param["relative"] * args[param["reference"]])
+        for target in self.targets.get():
+            target.damage(amount, type = type, source = self)
+        return True
+
+    def _mechanic_heal(self, emitter, **args):
+        param = self.template.parameters
+        if "amount" in param:
+            amount = param["amount"]
+        else:
+            assert "relative" in param and "reference" in param
+            amount = int(param["relative"] * args[param["reference"]])
+        for target in self.targets.get():
+            target.heal(amount)
+        return True
 
 
 class EffectCallback(object):
-    def __init__(self, channel, event, sources, function):
+    def __init__(self, ability, unit, channel, event, sources, function):
+        self.ability = ability
+        self.unit = unit
+        self.channel = channel
         self.topic = getattr(channel, event)
         self.sources = sources
         self.function = function
@@ -251,7 +287,8 @@ class EffectCallback(object):
 
     def callback(self, emitter, **args):
         if emitter in self.sources:
-            self.function(emitter, **args)
+            if self.function(emitter, **args):
+                self.channel.ability(self.ability, unit = self.unit)
 
     def remove(self):
         self.topic.unsub(self.callback)
@@ -272,6 +309,8 @@ class UnitEventChannel(object):
         self.defend     = Event()
         self.rotate_in  = Event()
         self.rotate_out = Event()
+        self.ability    = Event()
+        self.post_attack = Event()  # successful attack
 
 class TeamEventChannel(object):
     def __init__(self):
@@ -284,6 +323,7 @@ class TeamEventChannel(object):
 class MechanicsEventChannel(object):
     def __init__(self):
         self.round  = Event()
+        # self.attack = Event()
 
 class EngineEventChannel(object):
     def __init__(self):

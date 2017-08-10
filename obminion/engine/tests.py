@@ -34,15 +34,15 @@ abilities = {
 
 species = {
     "dummy": UnitTemplate("dummy", "Target Dummy", types["dummy"],
-                          20, 10, 10, (abilities["none"],), ""),
+                          20, 10, 10, (abilities["none"],)),
     "normal": UnitTemplate("normal", "Normal Tester", types["normal"],
-                          20, 10, 12, (), ""),
+                          20, 10, 12, ()),
     "resistant": UnitTemplate("resistant", "Resistant Tester", types["resistant"],
-                          20, 10, 12, (), ""),
+                          20, 10, 12, ()),
     "weak": UnitTemplate("weak", "Weak Tester", types["weak"],
-                          20, 10, 12, (), ""),
+                          20, 10, 12, ()),
     "logger": UnitTemplate("logger", "Logger", types["normal"],
-                          10, 10, 12, (abilities["log"],), "")
+                          10, 10, 12, (abilities["log"],))
 }
 
 dummy = (UnitInstance(species["dummy"]),)

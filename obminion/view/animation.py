@@ -95,6 +95,7 @@ class WriteAnimation(object):
         if self.elapsed > self.delay and len(self.displayed) != len(self.text):
             if self.rate <= 0:
                 self.displayed = self.text
+                self.element.set_text(self.displayed)
             else:
                 t = self.elapsed - self.delay
                 n = int(t * self.rate)

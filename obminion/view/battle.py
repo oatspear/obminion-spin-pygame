@@ -78,9 +78,12 @@ class BattleScene(object):
             team_index += 1
         engine.mechanics.team_events.rotate_left.sub(self.on_team_rotate_left)
         engine.mechanics.team_events.rotate_right.sub(self.on_team_rotate_right)
+        engine.mechanics.team_events.add.sub(self.on_team_add)
+        engine.mechanics.team_events.remove.sub(self.on_team_remove)
         engine.mechanics.unit_events.attack.sub(self.on_attack)
         engine.mechanics.unit_events.damage.sub(self.on_damage)
         engine.mechanics.unit_events.heal.sub(self.on_heal)
+        engine.mechanics.unit_events.ability.sub(self.on_trigger_ability)
 
     def get_player_input(self):
         action = self.selected_action
@@ -114,7 +117,7 @@ class BattleScene(object):
         else:
             self._log("The enemy attacked you.")
 
-    def on_damage(self, unit, amount = 0, type = None):
+    def on_damage(self, unit, amount = 0, type = None, source = None):
         team = self.teams[unit.team.index]
         portrait = team.get_portrait_for(unit.index, unit.team.size)
         if type is None:
@@ -126,12 +129,15 @@ class BattleScene(object):
         level = unit.health / float(unit.max_health.value)
         self._animations.push(BarLevelAnimation(portrait, level, -0.5))
 
-    def on_heal(self, unit, amount = 0):
+    def on_heal(self, unit, amount = 0, source = None):
         team = self.teams[unit.team.index]
         portrait = team.get_portrait_for(unit.index, unit.team.size)
         self._log("{} restored {} health.".format(unit.template.name, amount))
         level = unit.health / float(unit.max_health.value)
         self._animations.push(BarLevelAnimation(portrait, level, 0.5))
+
+    def on_trigger_ability(self, ability, unit = None):
+        self._log("{} triggered {}.".format(unit.template.name, ability.name))
 
     def on_team_rotate_left(self, team, active = None, previous = None):
         if team.index == 0:
@@ -161,6 +167,17 @@ class BattleScene(object):
         animation.on_end = lambda a: self._update_team_portraits(team.index, team)
         self._animations.push(animation)
 
+    def on_team_add(self, team, unit = None):
+        animation = Animation(1.0, 0.0)
+        animation.on_end = lambda a: self._update_team_portraits(team.index, team)
+        self._animations.push(animation)
+
+    def on_team_remove(self, team, unit = None):
+        if team.size:
+            animation = Animation(1.0, 0.0)
+            animation.on_end = lambda a: self._update_team_portraits(team.index, team)
+            self._animations.push(animation)
+
 
     def _update_team_portraits(self, team_index, battle_team):
         team = self.teams[team_index]
@@ -177,12 +194,12 @@ class BattleScene(object):
         unit = battle_team.units[0]
         portrait = team.get_portrait_for(0, n)
         portrait.visible = True
-        portrait.set_picture(self.sprite_bank.get(unit.template.id + "-main"))
+        portrait.set_picture(self.sprite_bank.get(unit.template.id + "_main"))
         portrait.set_icon(self.sprite_bank.get(unit.template.type.id))
         portrait.bar_level = unit.health / float(unit.max_health.value)
 
     def _log(self, text):
-        animation = WriteAnimation(None, text, 20, delay = 0.5)
+        animation = WriteAnimation(None, text, 0, delay = 0.5)
         animation.on_start = self._on_log_start
         self._animations.push(animation)
 
