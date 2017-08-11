@@ -131,7 +131,8 @@ class TextLabel(object):
 
 class UnitPortrait(UIWidget):
     def __init__(self, x, y, name, frame, border, bar, bar_colour, bar_bg,
-                 picture):
+                 picture, bg_colour, font, font_colour,
+                 health_label, power_label, speed_label):
         UIWidget.__init__(self, x, y, frame, name = name, border = border)
         self.bar_level = 0.0
         self.bar_pos = bar
@@ -141,14 +142,32 @@ class UnitPortrait(UIWidget):
         self.picture = None
         self.picture_pos = picture
         self.picture_rect = None
+        self.bg_colour = bg_colour
+        self.display_picture = True
+        self.display_labels = True
+        self.health_pos = health_label
+        self.health = TextLabel(health_label[0], health_label[1],
+                                font = font, font_colour = font_colour,
+                                font_bg = bg_colour)
+        self.power_pos = power_label
+        self.power = TextLabel(power_label[0], power_label[1],
+                               font = font, font_colour = font_colour,
+                               font_bg = bg_colour)
+        self.speed_pos = speed_label
+        self.speed = TextLabel(speed_label[0], speed_label[1],
+                               font = font, font_colour = font_colour,
+                               font_bg = bg_colour)
 
     def draw(self, screen):
         if not self.visible:
             return False
-        if not self.picture is None:
+        if self.picture is None or not self.display_picture:
+            screen.fill(self.bg_colour, self.picture_pos)
+        else:
             self.picture_rect.x = self.x + self.picture_pos[0]
             self.picture_rect.y = self.y + self.picture_pos[1]
             screen.blit(self.picture, self.picture_rect)
+    # -- health bar -----------------------------------------------------------
         self.bar_rect.x = self.x + self.bar_pos[0]
         if not self.bar_bg is None:
             self.bar_rect.h = self.bar_pos[3]
@@ -160,6 +179,17 @@ class UnitPortrait(UIWidget):
                                + self.bar_pos[3] - self.bar_rect.h)
             screen.fill(self.bar_colour, self.bar_rect)
         UIWidget.draw(self, screen)
+    # -- labels ---------------------------------------------------------------
+        if self.display_labels:
+            self.health.x = self.x + self.health_pos[0]
+            self.health.y = self.y + self.health_pos[1]
+            self.health.draw(screen)
+            self.power.x = self.x + self.power_pos[0]
+            self.power.y = self.y + self.power_pos[1]
+            self.power.draw(screen)
+            self.speed.x = self.x + self.speed_pos[0]
+            self.speed.y = self.y + self.speed_pos[1]
+            self.speed.draw(screen)
 
     def set_picture(self, image):
         self.picture = image
@@ -175,25 +205,45 @@ class UnitPortraitL(UnitPortrait):
     def __init__(self, x = 0, y = 0, name = "portrait-L", frame = None,
                  border = (0, 0, 0, 0), bar = (0, 0, 8, 64),
                  picture = (8, 0, 64, 64), bar_colour = (0, 128, 0),
-                 bar_bg = (0, 0, 0)):
+                 bar_bg = (0, 0, 0), bg_colour = (0, 0, 0), font = None,
+                 font_name = "monospace", font_size = 12,
+                 font_colour = (0, 0, 0), font_bg = None,
+                 health_label = (8, 0), power_label = (8, 18),
+                 speed_label = (8, 36)):
+        if font is None:
+            font = pg.font.SysFont(font_name, font_size)
         UnitPortrait.__init__(self, x, y, name, frame, border,
-                              bar, bar_colour, bar_bg, picture)
+                              bar, bar_colour, bar_bg, picture,
+                              bg_colour, font, font_colour,
+                              health_label, power_label, speed_label)
 
 
 class UnitPortraitR(UnitPortrait):
     def __init__(self, x = 0, y = 0, name = "portrait-R", frame = None,
                  border = (0, 0, 0, 0), bar = (64, 0, 8, 64),
                  picture = (0, 0, 64, 64), bar_colour = (0, 128, 0),
-                 bar_bg = (0, 0, 0)):
+                 bar_bg = (0, 0, 0), bg_colour = (0, 0, 0), font = None,
+                 font_name = "monospace", font_size = 12,
+                 font_colour = (0, 0, 0), font_bg = None,
+                 health_label = (0, 0), power_label = (0, 18),
+                 speed_label = (0, 36)):
+        if font is None:
+            font = pg.font.SysFont(font_name, font_size)
         UnitPortrait.__init__(self, x, y, name, frame, border,
-                              bar, bar_colour, bar_bg, picture)
+                              bar, bar_colour, bar_bg, picture,
+                              bg_colour, font, font_colour,
+                              health_label, power_label, speed_label)
 
 
 class LargeUnitPortrait(UnitPortrait):
     def __init__(self, x, y, name, frame, border,
-                 bar, bar_colour, bar_bg, picture, icon):
+                 bar, bar_colour, bar_bg, picture, icon,
+                 bg_colour, font, font_colour,
+                 health_label, power_label, speed_label):
         UnitPortrait.__init__(self, x, y, name, frame, border,
-                              bar, bar_colour, bar_bg, picture)
+                              bar, bar_colour, bar_bg, picture,
+                              bg_colour, font, font_colour,
+                              health_label, power_label, speed_label)
         self.icon = None
         self.icon_pos = icon
         self.icon_rect = None
@@ -201,11 +251,11 @@ class LargeUnitPortrait(UnitPortrait):
     def draw(self, screen):
         if not self.visible:
             return False
-        UnitPortrait.draw(self, screen)
         if not self.icon is None:
             self.icon_rect.x = self.x + self.icon_pos[0]
             self.icon_rect.y = self.y + self.icon_pos[1]
             screen.blit(self.icon, self.icon_rect)
+        UnitPortrait.draw(self, screen)
 
     def set_icon(self, image):
         self.icon = image
@@ -221,18 +271,34 @@ class LargeUnitPortraitL(LargeUnitPortrait):
     def __init__(self, x = 0, y = 0, name = "portrait-lg-L", frame = None,
                  border = (0, 0, 0, 0), bar = (24, 32, 8, 96),
                  bar_colour = (0, 128, 0), bar_bg = (0, 0, 0),
-                 picture = (32, 0, 128, 128), icon = (0, 0, 32, 32)):
+                 picture = (32, 0, 128, 128), icon = (0, 0, 32, 32),
+                 bg_colour = (0, 0, 0), font = None, font_name = "monospace",
+                 font_size = 12, font_colour = (0, 0, 0), font_bg = None,
+                 health_label = (0, 0), power_label = (0, 18),
+                 speed_label = (0, 36)):
+        if font is None:
+            font = pg.font.SysFont(font_name, font_size)
         LargeUnitPortrait.__init__(self, x, y, name, frame, border, bar,
-                                   bar_colour, bar_bg, picture, icon)
+                                   bar_colour, bar_bg, picture, icon,
+                                   bg_colour, font, font_colour,
+                                   health_label, power_label, speed_label)
 
 
 class LargeUnitPortraitR(LargeUnitPortrait):
     def __init__(self, x = 0, y = 0, name = "portrait-lg-R", frame = None,
                  border = (0, 0, 0, 0), bar = (128, 0, 8, 96),
                  bar_colour = (0, 128, 0), bar_bg = (0, 0, 0),
-                 picture = (0, 0, 128, 128), icon = (128, 96, 32, 32)):
+                 picture = (0, 0, 128, 128), icon = (128, 96, 32, 32),
+                 bg_colour = (0, 0, 0), font = None, font_name = "monospace",
+                 font_size = 12, font_colour = (0, 0, 0), font_bg = None,
+                 health_label = (0, 0), power_label = (0, 18),
+                 speed_label = (0, 36)):
+        if font is None:
+            font = pg.font.SysFont(font_name, font_size)
         LargeUnitPortrait.__init__(self, x, y, name, frame, border, bar,
-                                   bar_colour, bar_bg, picture, icon)
+                                   bar_colour, bar_bg, picture, icon,
+                                   bg_colour, font, font_colour,
+                                   health_label, power_label, speed_label)
 
 
 ###############################################################################

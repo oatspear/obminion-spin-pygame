@@ -93,7 +93,7 @@ class BattleScene(object):
 
     def request_player_input(self):
         self.selected_action = None
-        self._log("Selecting round actions...")
+        self._log("Selecting actions...")
         animation = GetActionAnimation(self.action_panel)
         animation.on_end = self._on_player_action
         self._animations.push(animation)
@@ -128,6 +128,9 @@ class BattleScene(object):
         self._log(text)
         level = unit.health / float(unit.max_health.value)
         self._animations.push(BarLevelAnimation(portrait, level, -0.5))
+        if unit.index == 0:
+            self._animations.push(WriteAnimation(portrait.health,
+                                                 str(unit.health), 0))
 
     def on_heal(self, unit, amount = 0, source = None):
         team = self.teams[unit.team.index]
@@ -135,6 +138,9 @@ class BattleScene(object):
         self._log("{} restored {} health.".format(unit.template.name, amount))
         level = unit.health / float(unit.max_health.value)
         self._animations.push(BarLevelAnimation(portrait, level, 0.5))
+        if unit.index == 0:
+            self._animations.push(WriteAnimation(portrait.health,
+                                                 str(unit.health), 0))
 
     def on_trigger_ability(self, ability, unit = None):
         self._log("{} triggered {}.".format(unit.template.name, ability.name))
@@ -197,6 +203,9 @@ class BattleScene(object):
         portrait.set_picture(self.sprite_bank.get(unit.template.id + "_main"))
         portrait.set_icon(self.sprite_bank.get(unit.template.type.id))
         portrait.bar_level = unit.health / float(unit.max_health.value)
+        portrait.health.set_text(str(unit.health))
+        portrait.power.set_text(str(unit.power.value))
+        portrait.speed.set_text(str(unit.speed.value))
 
     def _log(self, text):
         animation = WriteAnimation(None, text, 0, delay = 0.5)
