@@ -24,6 +24,7 @@ from .engine.models import UnitTemplate, UnitInstance, UnitType, Ability, Abilit
 from .engine.mechanics import BattleEngine
 from .view.battle import BattleScene
 from .view.sprites import Spritesheet, ImageSequence, MultiPoseSprite
+from .view.widgets import HighlightWidget
 
 
 SCREEN_WIDTH = 640
@@ -80,92 +81,19 @@ DUMMY = (UnitInstance(SPECIES["dummy"]), UnitInstance(SPECIES["dummy"]),
          UnitInstance(SPECIES["dummy"]), UnitInstance(SPECIES["dummy"]))
 ###############################################################################
 
-
-class GameEntity(pg.sprite.Sprite):
-    def __init__(self, game, x, y, width, height, image = None):
-        pg.sprite.Sprite.__init__(self)
-        self.game = game
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.set_image(image)
-
-    # def kill():
-    #   remove the Sprite from all Groups
-
-    # def alive():
-    #   does the sprite belong to any groups
-
-    def update(self, dt):
-        pass
-
-    def draw(self, screen):
-        dw = (self.rect.width - self.width) / 2
-        dh = (self.rect.height - self.height) / 2
-        self.rect.x = int(self.x - dw)
-        self.rect.y = int(self.y - dh)
-        screen.blit(self.image, (self.rect.x, self.rect.y))
-
-    @property
-    def x2(self):
-        return self.x + self.width
-
-    @property
-    def y2(self):
-        return self.y + self.height
-
-    @property
-    def cx(self):
-        return self.x + self.width / 2
-
-    @property
-    def cy(self):
-        return self.y + self.height / 2
-
-    def set_image(self, image):
-    # Create an image of the block, and fill it with a color.
-    # This could also be an image loaded from the disk.
-        if image is None:
-            self.image = pg.Surface([self.width, self.height])
-            self.image.fill((0, 0, 0))
-        else:
-            self.image = image
-    # Fetch the rectangle object that has the dimensions of the image
-    # Update the position of this object with rect.x and rect.y
-        self.rect = self.image.get_rect()
-    # -----------------------------------------------------
-        dw = (self.rect.width - self.width) / 2
-        dh = (self.rect.height - self.height) / 2
-        self.rect.x = int(self.x - dw)
-        self.rect.y = int(self.y - dh)
-
-
-class MovingObject(GameEntity):
-    def __init__(self, game, position, dimension, direction, speed, image = None):
-        GameEntity.__init__(self, game, position[0], position[1],
-                            dimension[0], dimension[1], image = image)
-        self.direction = direction
-        self.speed = speed
-        self.moving = False
-        self._x = self.x    # previous x
-        self._y = self.y    # previous y
-
-    def update(self, dt):
-        self._x = self.x
-        self._y = self.y
-        if self.moving:
-            self.x += self.direction[0] * self.speed * dt
-            self.y += self.direction[1] * self.speed * dt
-
+class GameData(object):
+    def __init__(self):
+        self.player_team = PLAYER
+        self.enemy_team = DUMMY
 
 
 class State(object):
-    def __init__(self):
+    def __init__(self, shared_data):
         self.done = False
         self.next = None
         self.quit = False
         self.previous = None
+        self.shared_data = shared_data
 
     def cleanup(self):
         pass
@@ -184,8 +112,8 @@ class State(object):
 
 
 class StartScreen(State):
-    def __init__(self):
-        State.__init__(self)
+    def __init__(self, shared_data):
+        State.__init__(self, shared_data)
         self.next = "main_menu"
 
     def startup(self):
@@ -205,8 +133,8 @@ class StartScreen(State):
 
 
 class MainMenu(State):
-    def __init__(self):
-        State.__init__(self)
+    def __init__(self, shared_data):
+        State.__init__(self, shared_data)
         self.next = "overworld"
 
     def startup(self):
@@ -226,12 +154,76 @@ class MainMenu(State):
 
 
 class Overworld(State):
-    def __init__(self):
-        State.__init__(self)
+    def __init__(self, shared_data):
+        State.__init__(self, shared_data)
         self.next = "battle"
-        self.nodes = [GameEntity(self, 100, 100, 32, 32),
-                      GameEntity(self, 200, 240, 32, 32),
-                      GameEntity(self, 470, 300, 32, 32)]
+        self.bg_image = pg.image.load("images/overworld_map.jpg").convert()
+
+        highlight = pg.image.load("images/highlight_circle.png").convert_alpha()
+        icon_combat = pg.image.load("images/overworld_button_combat.png").convert_alpha()
+        level_data = {
+            "senjin": {
+                "name": "Sen'jin Village",
+                "x": 330, # 346,
+                "y": 330, # 338,
+                # "icon": icon_combat
+                "highlight": highlight
+            },
+            "echo": {
+                "name": "Echo Isles",
+                "x": 407, # 420,
+                "y": 373, # 387,
+                # "icon": icon_combat
+                "highlight": highlight
+            },
+            "barrens": {
+                "name": "The Barrens",
+                "x": 175, # 187,
+                "y": 171, # 185,
+                # "icon": pg.image.load("images/overworld_button_travel.png").convert_alpha()
+                "highlight": highlight
+            },
+            "hold": {
+                "name": "Northwatch Hold",
+                "x": 345, # 361,
+                "y": 240, # 257,
+                # "icon": pg.image.load("images/overworld_button_boss.png").convert_alpha()
+                "highlight": highlight
+            },
+            "razor": {
+                "name": "Razor Hill",
+                "x": 315, # 333,
+                "y": 176, # 187,
+                # "icon": pg.image.load("images/overworld_button_home.png").convert_alpha()
+                "highlight": highlight
+            },
+            "orgrimmar": {
+                "name": "Orgrimmar",
+                "x": 256, # 270,
+                "y": 16, # 35,
+                # "icon": pg.image.load("images/overworld_button_trade.png").convert_alpha()
+                "highlight": highlight
+            },
+            "trials": {
+                "name": "Valley of Trials",
+                "x": 244,
+                "y": 265,
+                "highlight": highlight
+            },
+            "thunder": {
+                "name": "Thunder Ridge",
+                "x": 221,
+                "y": 96,
+                "highlight": highlight
+            }
+        }
+
+        self.nodes = []
+        for name, data in level_data.iteritems():
+            # node = UIWidget(data["x"], data["y"], data["icon"], name = name)
+            node = HighlightWidget(data["x"], data["y"], data["highlight"], name = name)
+            node.on_click = self._on_node_click
+            self.nodes.append(node)
 
     def startup(self):
         print "> Overworld / Level Selection"
@@ -245,26 +237,36 @@ class Overworld(State):
                 self.next = "main_menu"
                 self.done = True
         elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-            i = 0
             for node in self.nodes:
-                if node.rect.collidepoint(pg.mouse.get_pos()):
-                    print ">> Selected level", i
-                    self.next = "battle"
-                    self.done = True
-                    break
-                i += 1
+                if node.get_event(event):
+                    return
+
+    def update(self, dt):
+        pos = pg.mouse.get_pos()
+        for node in self.nodes:
+            node.update_mouse(pos)
 
     def draw(self, screen):
-        screen.fill((32, 92, 228))
+        if self.bg_image:
+            screen.blit(self.bg_image, (0, 0))
+        else:
+            screen.fill((32, 92, 228))
         for node in self.nodes:
             node.draw(screen)
 
 
+    def _on_node_click(self, node):
+        print ">> Selected level", node.name
+        self.next = "battle"
+        self.done = True
+
+
 class Battle(State):
-    def __init__(self):
-        State.__init__(self)
+    def __init__(self, shared_data):
+        State.__init__(self, shared_data)
         self.next = "overworld"
         self.engine = BattleEngine()
+        self.bg_image = pg.image.load("images/battle_bg2.jpg").convert()
 
         animation_bank = MultiPoseSprite()
         battle_animations = Spritesheet("images/rotation_sheet.png")
@@ -274,14 +276,14 @@ class Battle(State):
                                   (0, 128, 128, 128), 4, 0.1))
 
         bar_colour = (0, 204, 0)
-        frame_l = pg.image.load("images/portrait_frame3_lr.png").convert_alpha()
-        frame_r = pg.image.load("images/portrait_frame3_rl.png").convert_alpha()
+        frame_l = pg.image.load("images/portrait_frame4_lr.png").convert_alpha()
+        frame_r = pg.image.load("images/portrait_frame4_rl.png").convert_alpha()
         dummy_pic = pg.image.load("images/dummy.png").convert()
         dummy_pic_lg = pg.image.load("images/dummy_lg.png").convert()
         type_icon = pg.image.load("images/type.png").convert_alpha()
         panel_frame = pg.image.load("images/panel_frame.png").convert_alpha()
         action_panel = pg.image.load("images/action_panel.png").convert_alpha()
-        common_font = pg.font.SysFont("monospace", 12)
+        common_font = pg.font.Font("OxygenMono-Regular.ttf", 12)
         sprite_bank = {
             "0000": dummy_pic,
             "0000_main": dummy_pic_lg,
@@ -323,9 +325,9 @@ class Battle(State):
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24),
                         "bg_colour": (24, 24, 24),
-                        "health_label": (173, 22),
-                        "power_label": (173, 62),
-                        "speed_label": (173, 102),
+                        "health_label": (72, 114),
+                        "power_label": (107, 114),
+                        "speed_label": (137, 114),
                         "font": common_font,
                         "font_colour": (255, 255, 255)
                     },
@@ -340,6 +342,7 @@ class Battle(State):
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24),
                         "bg_colour": (24, 24, 24),
+                        "health_label": (44, 50),
                         "font": common_font,
                         "font_colour": (255, 255, 255)
                     }, {
@@ -353,6 +356,7 @@ class Battle(State):
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24),
                         "bg_colour": (24, 24, 24),
+                        "health_label": (44, 50),
                         "font": common_font,
                         "font_colour": (255, 255, 255)
                     }, {
@@ -366,6 +370,7 @@ class Battle(State):
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24),
                         "bg_colour": (24, 24, 24),
+                        "health_label": (44, 50),
                         "font": common_font,
                         "font_colour": (255, 255, 255)
                     }],
@@ -380,19 +385,19 @@ class Battle(State):
                 "team_right": {
                     "active": {
                         "name": "portrait-1-0",
-                        "x": SCREEN_WIDTH - 16 - 82 - (195 - 16),
+                        "x": SCREEN_WIDTH - 16 - 82 - (170 - 16),
                         "y": 16 + 69 + 8,
                         "frame": pg.image.load("images/portrait_frame_lg4_rl.png").convert_alpha(),
                         "border": (3, 4, 4, 4),
-                        "picture": (28, 2, 128, 128),
-                        "icon": (160, 87, 32, 32),
-                        "bar": (160, 8, 8, 78),
+                        "picture": (3, 2, 128, 128),
+                        "icon": (135, 87, 32, 32),
+                        "bar": (135, 8, 8, 78),
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24),
                         "bg_colour": (24, 24, 24),
-                        "health_label": (4, 22),
-                        "power_label": (4, 62),
-                        "speed_label": (4, 102),
+                        "health_label": (36, 114),
+                        "power_label": (71, 114),
+                        "speed_label": (99, 114),
                         "font": common_font,
                         "font_colour": (255, 255, 255)
                     },
@@ -407,6 +412,7 @@ class Battle(State):
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24),
                         "bg_colour": (24, 24, 24),
+                        "health_label": (32, 50),
                         "font": common_font,
                         "font_colour": (255, 255, 255)
                     }, {
@@ -420,6 +426,7 @@ class Battle(State):
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24),
                         "bg_colour": (24, 24, 24),
+                        "health_label": (32, 50),
                         "font": common_font,
                         "font_colour": (255, 255, 255)
                     }, {
@@ -433,6 +440,7 @@ class Battle(State):
                         "bar_colour": bar_colour,
                         "bar_bg": (24, 24, 24),
                         "bg_colour": (24, 24, 24),
+                        "health_label": (32, 50),
                         "font": common_font,
                         "font_colour": (255, 255, 255)
                     }],
@@ -511,7 +519,8 @@ class Battle(State):
     def startup(self):
         print "> Battle"
         self.scene.reset()
-        self.engine.set_battle((PLAYER, DUMMY))
+        self.engine.set_battle((self.shared_data.player_team,
+                                self.shared_data.enemy_team))
         self.scene.set_battle(self.engine)
 
     def get_event(self, event):
@@ -534,7 +543,10 @@ class Battle(State):
             self.engine.step()
 
     def draw(self, screen):
-        screen.fill((0,0,0))
+        if self.bg_image:
+            screen.blit(self.bg_image, (0, 0))
+        else:
+            screen.fill((0,0,0))
         self.scene.draw(screen)
 
     def _on_battle_end(self, engine):
@@ -600,11 +612,12 @@ def main():
 
     pg.init()
     app = Control(**settings)
+    shared_data = GameData()
     state_dict = {
-        "start":        StartScreen(),
-        "main_menu":    MainMenu(),
-        "overworld":    Overworld(),
-        "battle":       Battle()
+        "start":        StartScreen(shared_data),
+        "main_menu":    MainMenu(shared_data),
+        "overworld":    Overworld(shared_data),
+        "battle":       Battle(shared_data)
     }
     app.setup_states(state_dict, "start")
     app.main_game_loop()

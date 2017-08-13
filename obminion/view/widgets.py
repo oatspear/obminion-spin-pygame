@@ -50,6 +50,8 @@ class UIWidget(pg.sprite.Sprite):
             screen.blit(self.image, self.rect)
 
     def get_event(self, event):
+        if not self.visible:
+            return False
         if event.type == pg.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(pg.mouse.get_pos()):
                 if event.button == 1 and not self.on_click is None:
@@ -86,9 +88,13 @@ class UIWidget(pg.sprite.Sprite):
 
     def set_image(self, image):
         self.image = image
-        self.rect = self.image.get_rect()
-        self.rect.x = self.x
-        self.rect.y = self.y
+        if image is None:
+            self.visible = False
+            self.rect = pg.Rect(self.x, self.y, 1, 1)
+        else:
+            self.rect = self.image.get_rect()
+            self.rect.x = self.x
+            self.rect.y = self.y
 
 
 class TextLabel(object):
@@ -123,6 +129,17 @@ class TextLabel(object):
         else:
             self.label = None
             self.rect = None
+
+
+class HighlightWidget(UIWidget):
+    def __init__(self, x, y, image, name = "widget", border = (0, 0, 0, 0),
+                 area = None):
+        UIWidget.__init__(self, x, y, image, name = name, border = border)
+        self.visible = False
+        self.area = pg.Rect(*area) if area else self.rect
+
+    def update_mouse(self, mouse_pos):
+        self.visible = self.area.collidepoint(mouse_pos)
 
 
 ###############################################################################
