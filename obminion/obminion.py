@@ -23,6 +23,7 @@ import pygame as pg
 from .engine.models import UnitTemplate, UnitInstance, UnitType, Ability, AbilityEffect
 from .engine.mechanics import BattleEngine
 from .view.battle import BattleScene
+from .view.overworld import OverworldScene
 from .view.sprites import Spritesheet, ImageSequence, MultiPoseSprite
 from .view.widgets import HighlightWidget
 
@@ -156,12 +157,31 @@ class MainMenu(State):
 class Overworld(State):
     def __init__(self, shared_data):
         State.__init__(self, shared_data)
-        self.next = "battle"
-        self.bg_image = pg.image.load("images/overworld_map.jpg").convert()
+        self.next = None
+        self._waiting_for_mission = False
 
+        image_bank = {
+            "durotar": pg.image.load("images/overworld_map.jpg").convert()
+        }
+        animation_bank = MultiPoseSprite()
+        dummy_pic = pg.image.load("images/dummy.png").convert()
+        sprite_bank = {
+            "0000": dummy_pic,
+            "0001": dummy_pic,
+            "0002": dummy_pic,
+            "0003": dummy_pic,
+            "0004": dummy_pic,
+            "0005": pg.image.load("images/pyro.png").convert(),
+            "0006": pg.image.load("images/vampire.png").convert(),
+            "0007": pg.image.load("images/pitlord.png").convert(),
+            "0008": pg.image.load("images/abomination.png").convert()
+        }
+
+        common_font = pg.font.Font("OxygenMono-Regular.ttf", 12)
         highlight = pg.image.load("images/highlight_circle.png").convert_alpha()
         icon_combat = pg.image.load("images/overworld_button_combat.png").convert_alpha()
-        level_data = {
+        portrait_frame = pg.image.load("images/portrait_simple.png").convert_alpha()
+        self.level_data = {
             "senjin": {
                 "name": "Sen'jin Village",
                 "x": 330, # 346,
@@ -217,16 +237,107 @@ class Overworld(State):
                 "highlight": highlight
             }
         }
+        gx_config = {
+            "screen_width": SCREEN_WIDTH,
+            "screen_height": SCREEN_HEIGHT,
+            "overworld_scene": {
+                "mission_panel": {
+                    "x": 0,
+                    "y": 0,
+                    "frame": pg.image.load("images/mission_panel.png").convert_alpha(),
+                    "title": {
+                        "x": 75,
+                        "y": 36,
+                        "font": common_font,
+                        "font_colour": (255, 255, 255)
+                    },
+                    "actions": {
+                        "cancel": {
+                            "x": 353,
+                            "y": 20,
+                            "icon": pg.image.load("images/button_close.png").convert_alpha()
+                        }
+                    },
+                    "opponent": {
+                        "x": 77,
+                        "y": 314,
+                        "frame": pg.image.load("images/battle_button_frame.png").convert_alpha(),
+                        "picture": (98, 33, 64, 64),
+                        "bg_colour": (24, 24, 24)
+                    },
+                    "player_team": [{
+                        "x": 43,
+                        "y": 96,
+                        "frame": portrait_frame,
+                        "border": (3, 3, 4, 4),
+                        "picture": (3, 2, 64, 64),
+                        "bg_colour": (24, 24, 24)
+                    }, {
+                        "x": 126,
+                        "y": 96,
+                        "frame": portrait_frame,
+                        "border": (3, 3, 4, 4),
+                        "picture": (3, 2, 64, 64),
+                        "bg_colour": (24, 24, 24)
+                    }, {
+                        "x": 209,
+                        "y": 96,
+                        "frame": portrait_frame,
+                        "border": (3, 3, 4, 4),
+                        "picture": (3, 2, 64, 64),
+                        "bg_colour": (24, 24, 24)
+                    }, {
+                        "x": 292,
+                        "y": 96,
+                        "frame": portrait_frame,
+                        "border": (3, 3, 4, 4),
+                        "picture": (3, 2, 64, 64),
+                        "bg_colour": (24, 24, 24)
+                    }],
+                    "roster": [{
+                        "x": 43,
+                        "y": 202,
+                        "frame": portrait_frame,
+                        "border": (3, 3, 4, 4),
+                        "picture": (3, 2, 64, 64),
+                        "bg_colour": (24, 24, 24)
+                    }, {
+                        "x": 126,
+                        "y": 202,
+                        "frame": portrait_frame,
+                        "border": (3, 3, 4, 4),
+                        "picture": (3, 2, 64, 64),
+                        "bg_colour": (24, 24, 24)
+                    }, {
+                        "x": 209,
+                        "y": 202,
+                        "frame": portrait_frame,
+                        "border": (3, 3, 4, 4),
+                        "picture": (3, 2, 64, 64),
+                        "bg_colour": (24, 24, 24)
+                    }, {
+                        "x": 292,
+                        "y": 202,
+                        "frame": portrait_frame,
+                        "border": (3, 3, 4, 4),
+                        "picture": (3, 2, 64, 64),
+                        "bg_colour": (24, 24, 24)
+                    }]
+                }
+            }
+        }
 
-        self.nodes = []
-        for name, data in level_data.iteritems():
-            # node = UIWidget(data["x"], data["y"], data["icon"], name = name)
-            node = HighlightWidget(data["x"], data["y"], data["highlight"], name = name)
-            node.on_click = self._on_node_click
-            self.nodes.append(node)
+        self.scene = OverworldScene(gx_config["overworld_scene"], sprite_bank,
+                                    animation_bank, image_bank)
 
     def startup(self):
         print "> Overworld / Level Selection"
+        self.next = None
+        self._waiting_for_mission = False
+        self.scene.set_map("durotar", self.level_data)
+
+    def cleanup(self):
+        self.scene.reset()
 
     def get_event(self, event):
         if event.type == pg.KEYDOWN:
@@ -237,28 +348,29 @@ class Overworld(State):
                 self.next = "main_menu"
                 self.done = True
         elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-            for node in self.nodes:
-                if node.get_event(event):
-                    return
+            self.scene.get_event(event)
 
     def update(self, dt):
-        pos = pg.mouse.get_pos()
-        for node in self.nodes:
-            node.update_mouse(pos)
+        self.scene.update(dt)
+        if not self.scene.busy and self.next:
+            self.done = True
+            return
+        action = self.scene.get_player_input()
+        if self._waiting_for_mission:
+            if action == "battle":
+                self.next = "battle"
+            elif action == "cancel":
+                self._waiting_for_mission = False
+        else:
+            if action:
+                self._waiting_for_mission = True
+                self.scene.set_mission(self.level_data[action]["name"],
+                                       self.shared_data.player_team,
+                                       [],
+                                       self.shared_data.enemy_team[0])
 
     def draw(self, screen):
-        if self.bg_image:
-            screen.blit(self.bg_image, (0, 0))
-        else:
-            screen.fill((32, 92, 228))
-        for node in self.nodes:
-            node.draw(screen)
-
-
-    def _on_node_click(self, node):
-        print ">> Selected level", node.name
-        self.next = "battle"
-        self.done = True
+        self.scene.draw(screen)
 
 
 class Battle(State):

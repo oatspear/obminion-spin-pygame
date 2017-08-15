@@ -100,7 +100,7 @@ class BattleScene(object):
 
     def on_portrait_click(self, portrait):
         print ">> Portrait clicked", portrait.name
-        self.combat_log.log("Clicked on " + portrait.name)
+        # self.combat_log.log("Clicked on " + portrait.name)
 
     def on_battle_start(self, engine):
         self._log("The battle has started!")

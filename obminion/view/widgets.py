@@ -26,14 +26,15 @@ import pygame as pg
 ###############################################################################
 
 class UIWidget(pg.sprite.Sprite):
-    def __init__(self, x, y, image, name = "widget", border = (0, 0, 0, 0)):
+    def __init__(self, x, y, image, name = "widget", border = (0, 0, 0, 0),
+                 on_click = None, on_right_click = None):
         pg.sprite.Sprite.__init__(self)
         self.name   = name
         self.x      = x
         self.y      = y
         self.set_image(image)
-        self.on_click       = None
-        self.on_right_click = None
+        self.on_click       = on_click
+        self.on_right_click = on_right_click
         self.border_top     = border[0]
         self.border_left    = border[1]
         self.border_bottom  = border[2]
@@ -136,10 +137,14 @@ class HighlightWidget(UIWidget):
                  area = None):
         UIWidget.__init__(self, x, y, image, name = name, border = border)
         self.visible = False
+        self.active = True
         self.area = pg.Rect(*area) if area else self.rect
 
     def update_mouse(self, mouse_pos):
-        self.visible = self.area.collidepoint(mouse_pos)
+        self.visible = self.active and self.area.collidepoint(mouse_pos)
+
+    def get_event(self, event):
+        return self.active and UIWidget.get_event(self, event)
 
 
 ###############################################################################
@@ -409,8 +414,10 @@ class CombatLogWidget(UIWidget):
 
 class ActionButton(UIWidget):
     def __init__(self, x = 0, y = 0, name = "button", icon = None,
-                 border = (0, 0, 0, 0), description = ""):
-        UIWidget.__init__(self, x, y, icon, name = name, border = border)
+                 border = (0, 0, 0, 0), description = "", on_click = None,
+                 on_right_click = None):
+        UIWidget.__init__(self, x, y, icon, name = name, border = border,
+                          on_click = on_click, on_right_click = on_right_click)
         self.description = description
 
 
@@ -438,7 +445,7 @@ class ActionPanel(UIWidget):
 
     def draw(self, screen):
         UIWidget.draw(self, screen)
-        if self.active:
+        if self.visible and self.active:
             for action in self.actions:
                 action.draw(screen)
             self.label.x = self.x + self.label_pos[0]
@@ -498,3 +505,114 @@ class BattleActionPanel(ActionPanel):
 
     def on_action_button_right_click(self, button):
         self.label.set_text(button.description)
+
+
+###############################################################################
+#   Overworld Widgets
+###############################################################################
+
+class SimplePortrait(UIWidget):
+    def __init__(self, x = 0, y = 0, name = "portrait", frame = None,
+                 border = (0, 0, 0, 0), picture = (0, 0),
+                 bg_colour = (0, 0, 0), on_click = None, on_right_click = None):
+        UIWidget.__init__(self, x, y, frame, name = name, border = border,
+                          on_click = on_click, on_right_click = on_right_click)
+        self.picture = None
+        self.picture_pos = picture
+        self.picture_rect = None
+        self.bg_colour = bg_colour
+
+    def draw(self, screen):
+        if not self.visible:
+            return False
+        if self.picture is None:
+            screen.fill(self.bg_colour, self.picture_pos)
+        else:
+            self.picture_rect.x = self.x + self.picture_pos[0]
+            self.picture_rect.y = self.y + self.picture_pos[1]
+            screen.blit(self.picture, self.picture_rect)
+        UIWidget.draw(self, screen)
+
+    def set_picture(self, image):
+        self.picture = image
+        if not image is None:
+            self.picture_rect = image.get_rect()
+            self.picture_rect.x = self.x + self.picture_pos[0]
+            self.picture_rect.y = self.y + self.picture_pos[1]
+        else:
+            self.picture_rect = None
+
+
+class MissionPanel(ActionPanel):
+    def __init__(self, x = 0, y = 0, name = "mission", frame = None,
+                 border = (0, 0, 0, 0), actions = None, title = None,
+                 player_team = None, roster = None, opponent = None,
+                 font = None, font_name = "monospace",
+                 font_size = 12, font_colour = (0, 0, 0), font_bg = None):
+        assert "cancel" in actions
+        ActionPanel.__init__(self, x = x, y = y, name = name, frame = frame,
+                             border = border, actions = actions,
+                             label = (title["x"], title["y"]),
+                             font = title.get("font"),
+                             font_name = title.get("font_name", "monospace"),
+                             font_size = title.get("font_size", 12),
+                             font_colour = title.get("font_colour", (0, 0, 0)),
+                             font_bg = title.get("font_bg"))
+        self.active = True
+        self._selected_action = None
+        self.team = []
+        self.team_pos = []
+        i = 0
+        for unit in player_team:
+            portrait = SimplePortrait(**unit)
+            portrait.index = i
+            self.team.append(portrait)
+            self.team_pos.append((unit["x"], unit["y"]))
+            i += 1
+        self.roster = []
+        self.roster_pos = []
+        i = 0
+        for unit in roster:
+            portrait = SimplePortrait(**unit)
+            portrait.index = i
+            self.roster.append(portrait)
+            self.roster_pos.append((unit["x"], unit["y"]))
+            i += 1
+        self.opponent = SimplePortrait(**opponent)
+        self.opponent_pos = (opponent["x"], opponent["y"])
+
+    @property
+    def title(self):
+        return self.label
+
+    def draw(self, screen):
+        if not self.visible:
+            return
+        ActionPanel.draw(self, screen)
+        for i in xrange(len(self.team)):
+            portrait = self.team[i]
+            pos = self.team_pos[i]
+            portrait.x = self.x + pos[0]
+            portrait.y = self.y + pos[1]
+            portrait.draw(screen)
+        for i in xrange(len(self.roster)):
+            portrait = self.roster[i]
+            pos = self.roster_pos[i]
+            portrait.x = self.x + pos[0]
+            portrait.y = self.y + pos[1]
+            portrait.draw(screen)
+        self.opponent.x = self.x + self.opponent_pos[0]
+        self.opponent.y = self.y + self.opponent_pos[1]
+        self.opponent.draw(screen)
+
+    def get_event(self, event):
+        if self.visible:
+            for action in self.actions:
+                if action.get_event(event):
+                    return True
+            if self.opponent.get_event(event):
+                return True
+        return False
+
+    def set_title(self, text):
+        self.label.set_text(text)
