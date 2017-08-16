@@ -143,7 +143,7 @@ class BattleMechanics(object):
         return FixTarget(unit.team, unit, (0,), inclusive = True)
 
     def _target_friend_all(self, unit):
-        return FixTarget(unit.team, unit, range(team.capacity),
+        return FixTarget(unit.team, unit, range(unit.team.capacity),
                          inclusive = True)
 
     def _target_friend_left(self, unit):
@@ -159,10 +159,10 @@ class BattleMechanics(object):
         return FixTarget(unit.team, unit, (0, 1, -1), inclusive = True)
 
     def _target_friend_others(self, unit):
-        return FixTarget(unit.team, unit, range(team.capacity))
+        return FixTarget(unit.team, unit, range(unit.team.capacity))
 
     def _target_friend_standby(self, unit):
-        return FixTarget(unit.team, unit, range(1, team.capacity),
+        return FixTarget(unit.team, unit, range(1, unit.team.capacity),
                          inclusive = True)
 
     def _target_opponent(self, unit):

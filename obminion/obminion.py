@@ -56,6 +56,9 @@ ABILITIES = {
                                        parameters = {"relative": 0.2, "reference": "damage"}),)),
     "death_aoe": Ability("death_aoe", "Disease Cloud", effects = (
                          AbilityEffect("damage", "all", ("self death",),
+                                       parameters = {"amount": 2}),)),
+    "long_range": Ability("long_range", "Long Range", effects = (
+                         AbilityEffect("damage", "opponent", ("friend_others post_attack",),
                                        parameters = {"amount": 2}),))
 }
 
@@ -73,7 +76,11 @@ SPECIES = {
     "cleave": UnitTemplate("0007", "Brutal Warrior", TYPES["normal"], 20, 10, 8,
                                 (ABILITIES["cleave"],)),
     "abomination": UnitTemplate("0008", "Abomination", TYPES["normal"], 16, 12, 8,
-                                (ABILITIES["death_aoe"],))
+                                (ABILITIES["death_aoe"],)),
+    "footman": UnitTemplate("0009", "Footman", TYPES["normal"], 20, 10, 10,
+                                (ABILITIES["none"],)),
+    "bowman": UnitTemplate("0010", "Bowman", TYPES["normal"], 14, 12, 10,
+                                (ABILITIES["long_range"],))
 }
 
 PLAYER = (UnitInstance(SPECIES["lifesteal"]), UnitInstance(SPECIES["double-edge"]),
@@ -174,13 +181,21 @@ class Overworld(State):
             "0005": pg.image.load("images/pyro.png").convert(),
             "0006": pg.image.load("images/vampire.png").convert(),
             "0007": pg.image.load("images/pitlord.png").convert(),
-            "0008": pg.image.load("images/abomination.png").convert()
+            "0008": pg.image.load("images/abomination.png").convert(),
+            "0009": pg.image.load("images/footman.png").convert(),
+            "0010": pg.image.load("images/bowman.png").convert()
         }
 
         common_font = pg.font.Font("OxygenMono-Regular.ttf", 12)
         highlight = pg.image.load("images/highlight_circle.png").convert_alpha()
         icon_combat = pg.image.load("images/overworld_button_combat.png").convert_alpha()
         portrait_frame = pg.image.load("images/portrait_simple.png").convert_alpha()
+        self.missions = {
+            "hold": (UnitInstance(SPECIES["footman"]),
+                     UnitInstance(SPECIES["footman"]),
+                     UnitInstance(SPECIES["footman"]),
+                     UnitInstance(SPECIES["bowman"]))
+        }
         self.level_data = {
             "senjin": {
                 "name": "Sen'jin Village",
@@ -363,6 +378,7 @@ class Overworld(State):
                 self._waiting_for_mission = False
         else:
             if action:
+                self.shared_data.enemy_team = self.missions.get(action, DUMMY)
                 self._waiting_for_mission = True
                 self.scene.set_mission(self.level_data[action]["name"],
                                        self.shared_data.player_team,
@@ -415,6 +431,10 @@ class Battle(State):
             "0007_main": pg.image.load("images/pitlord_lg.png").convert(),
             "0008": pg.image.load("images/abomination.png").convert(),
             "0008_main": pg.image.load("images/abomination_lg.png").convert(),
+            "0009": pg.image.load("images/footman.png").convert(),
+            "0009_main": pg.image.load("images/footman_lg.png").convert(),
+            "0010": pg.image.load("images/bowman.png").convert(),
+            "0010_main": pg.image.load("images/bowman_lg.png").convert(),
             "dummy": type_icon,
             "normal": type_icon,
             "resistant": type_icon,
