@@ -280,7 +280,7 @@ class EffectCallback(object):
         self.ability = ability
         self.unit = unit
         self.channel = channel
-        self.topic = getattr(channel, event)
+        self.topic = getattr(channel, event.split(":")[-1])
         self.sources = sources
         self.function = function
         self.topic.sub(self.callback)
